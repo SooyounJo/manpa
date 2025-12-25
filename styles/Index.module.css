@@ -1,0 +1,16 @@
+.main {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+}
+
+.brand {
+  font-size: clamp(42px, 10vw, 88px);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  color: #0b0f1a;
+}
+
+
