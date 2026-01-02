@@ -25,6 +25,7 @@ export default function LandingExperience() {
   const [mode446, setMode446] = useState(false);
   const [modeHalf, setModeHalf] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
+  const [showTopCapsule, setShowTopCapsule] = useState(false);
 
   useEffect(() => {
     const STEP_MS = 2000; // faster landing reveal
@@ -103,32 +104,50 @@ export default function LandingExperience() {
           open={showModePicker}
           onPick={() => {
             setShowModePicker(false);
-            const base = 2000;
-            // Begin prelude 4-step narrative
+            const t0 = 0;
+            // 1) Background exits (sequential 4->3->2). Finish around t=1800ms
+            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4])), t0 + 0));
+            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3])), t0 + 900));
+            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3, 2])), t0 + 1800));
+
+            // 2) After background gone, wait 2s, then show prelude message 1
+            const preludeStart = t0 + 1800 + 200 + 2000; // exit end + buffer + 2s
             setPhase('prelude');
-            setMessageIndex(0);
-            // exit then re-enter waves over time
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4])), base));
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3])), base + 900));
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3, 2])), base + 1800));
-            postTimersRef.current.push(setTimeout(() => setReenterGroups(new Set([2])), base + 3000));
-            postTimersRef.current.push(setTimeout(() => setReenterGroups(new Set([2, 3])), base + 6000));
-            postTimersRef.current.push(setTimeout(() => setReenterGroups(new Set([2, 3, 4])), base + 9000));
-            // advance prelude messages
-            postTimersRef.current.push(setTimeout(() => setMessageIndex(1), 3000));
-            postTimersRef.current.push(setTimeout(() => setMessageIndex(2), 6000));
-            postTimersRef.current.push(setTimeout(() => setMessageIndex(3), 9000));
-            // switch to closing 2-step narrative after prelude ends
+            postTimersRef.current.push(setTimeout(() => {
+              setMessageIndex(0);
+              setShowTopCapsule(true); // show top capsule with first message
+            }, preludeStart));
+
+            // 3) Messages change every 5s; on change trigger group re-entries
+            // At msg1 -> msg2: re-enter group 2
+            postTimersRef.current.push(setTimeout(() => {
+              setMessageIndex(1);
+              setReenterGroups(new Set([2]));
+            }, preludeStart + 5000));
+            // At msg2 -> msg3: re-enter group 3
+            postTimersRef.current.push(setTimeout(() => {
+              setMessageIndex(2);
+              setReenterGroups(new Set([2, 3]));
+            }, preludeStart + 10000));
+            // At msg3 -> msg4: re-enter group 4
+            postTimersRef.current.push(setTimeout(() => {
+              setMessageIndex(3);
+              setReenterGroups(new Set([2, 3, 4]));
+            }, preludeStart + 15000));
+
+            // 4) After prelude (4 msgs), switch to closing two-step narrative
             postTimersRef.current.push(setTimeout(() => {
               setPhase('closing');
               setMessageIndex(0);
-            }, 12000));
-            postTimersRef.current.push(setTimeout(() => setMessageIndex(1), 15000));
-            // reveal controls after closing
-            postTimersRef.current.push(setTimeout(() => setShowControls(true), 18000));
+            }, preludeStart + 20000));
+            postTimersRef.current.push(setTimeout(() => setMessageIndex(1), preludeStart + 25000));
+
+            // 5) Reveal controls slightly after closing
+            postTimersRef.current.push(setTimeout(() => setShowControls(true), preludeStart + 28000));
           }}
         />
         <div className={styles.centerText} aria-live="polite" style={{ display: messageIndex >= 0 ? 'grid' : 'none' }}>
+          <div className={`${styles.centerDim} ${messageIndex >= 0 ? styles.centerDimVisible : ''}`} />
           {phase === 'prelude' ? (
             <>
               <div className={`${styles.centerMsg} ${messageIndex === 0 ? styles.centerMsgVisible : ''}`}>
@@ -162,7 +181,7 @@ export default function LandingExperience() {
             </>
           ) : null}
         </div>
-        {showControls ? (
+        {(showTopCapsule || showControls) ? (
           <>
             <div className={styles.capsuleTop}>
               <div className={styles.capsuleDate}>

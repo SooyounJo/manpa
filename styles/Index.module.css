@@ -184,6 +184,16 @@
   text-align: center;
   padding: 24px;
 }
+.centerDim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(40vw 28vh at 50% 50%, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0) 70%);
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+.centerDimVisible {
+  opacity: 1;
+}
 .centerMsg {
   position: absolute;
   max-width: 90vw;

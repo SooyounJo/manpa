@@ -10,6 +10,7 @@
   /* subtle upscaling for all waves */
   --startScale: 0.98;
   --endScale: 1.02; /* tweak here for stronger or weaker overall size */
+  --enterDur: 800ms; /* faster entrance */
 }
 
 .wave {
@@ -35,15 +36,17 @@
 .visible {
   /* entrance then continuous float */
   animation:
-    enter 1200ms ease-out forwards,
-    floatXY var(--floatDur) ease-in-out calc(1200ms + var(--floatDelay)) infinite alternate;
+    enter var(--enterDur) ease-out forwards,
+    floatXY var(--floatDur) ease-in-out calc(var(--enterDur) + var(--floatDelay)) infinite alternate;
 }
 
 .exit {
   animation: exitFade 700ms ease-in forwards;
 }
 .reenter {
-  animation: reenter 900ms ease-out forwards;
+  animation:
+    reenter 900ms ease-out forwards,
+    floatXY var(--floatDur) ease-in-out 900ms infinite alternate;
 }
 .layer1 { z-index: 40; }
 .layer2 { z-index: 30; }
@@ -84,11 +87,13 @@
 @keyframes reenter {
   from {
     opacity: 0;
-    transform: translate3d(var(--exitX), var(--exitY), 0) scale(var(--endScale));
+    transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--endScale));
+    filter: blur(var(--enterBlur));
   }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(var(--endScale));
+    filter: blur(0px);
   }
 }
 

@@ -15,7 +15,9 @@
   place-items: center;
   padding: 24px;
   z-index: 2200;
-  background: rgba(8, 10, 16, 0.35); /* no blur for plain modal */
+  background: rgba(8, 10, 16, 0.40); /* slightly darker dim */
+  backdrop-filter: blur(12px) saturate(120%); /* heavier blur per request */
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
 }
 
 .overlayDim {
@@ -61,8 +63,8 @@
   height: min(60vw, 220px);
   border-radius: 24px;
   padding: 18px 16px;
-  background: rgba(255, 255, 255, 0.18); /* solid white glass, no gradient */
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.28); /* less transparent */
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: #fff;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
   display: flex;
