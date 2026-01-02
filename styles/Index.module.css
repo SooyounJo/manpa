@@ -7,10 +7,251 @@
 }
 
 .brand {
-  font-size: clamp(42px, 10vw, 88px);
-  font-weight: 800;
-  letter-spacing: -0.06em;
-  color: #0b0f1a;
+  font-size: clamp(88px, 19vw, 172px);
+  /* OTF 단일 웨이트일 가능성이 높아서, 합성 Bold로 인한 깨짐 방지 */
+  font-weight: 400;
+  letter-spacing: 0.18em; /* more gap between vertical characters */
+  color: #ffffff;
+  text-shadow:
+    0 3px 10px rgba(96, 125, 182, 0.45),
+    0 10px 34px rgba(96, 125, 182, 0.28);
+  font-family: 'Yuji Boku', ui-serif, Georgia, 'Times New Roman', serif;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+  position: fixed;
+  top: calc(24px + env(safe-area-inset-top));
+  right: calc(16px + env(safe-area-inset-right));
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 2000ms ease;
+  z-index: 1000; /* above waves */
+}
+
+.brandVisible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.brandChar {
+  display: inline;
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.brandVisible .brandChar {
+  animation: brandCharIn 750ms ease forwards;
+  animation-delay: calc(var(--i) * 750ms);
+}
+
+.brandFadeOut {
+  opacity: 0 !important;
+}
+
+.splash {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  z-index: 1100;
+  opacity: 1;
+  transition: opacity 500ms ease;
+  pointer-events: none;
+  animation: splashIn 600ms ease-out both;
+}
+
+.splashFade {
+  opacity: 0;
+}
+
+.splashImg {
+  display: block;
+  width: min(40vw, 180px);
+  height: auto;
+}
+
+@keyframes splashIn {
+  from { transform: translate(-50%, -50%) scale(0.9); opacity: 0.9; }
+  to   { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+/* Bottom-left Korean tagline */
+.tagline {
+  position: fixed;
+  left: calc(36px + env(safe-area-inset-left));
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  z-index: 900;
+  color: #ffffff;
+  text-shadow:
+    0 3px 10px rgba(96, 125, 182, 0.45),
+    0 10px 34px rgba(96, 125, 182, 0.28);
+  font-family: 'Arirang', 'MyOTF', 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  font-size: clamp(30px, 8vw, 38px);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transition: opacity 2000ms ease;
+}
+.taglineCol {
+  margin: 0;
+}
+
+.taglineVisible {
+  opacity: 1;
+}
+
+.taglineFadeOut {
+  opacity: 0 !important;
+}
+
+@keyframes brandCharIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.micOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.micModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.micModal {
+  width: 100%;
+  max-width: 360px;
+  background: rgba(9, 12, 20, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px 16px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
+}
+.micTitle {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+.micBody {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.micActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+.micBtnPrimary,
+.micBtnSecondary {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+.micBtnPrimary {
+  background: #5b7de5;
+  color: #fff;
+}
+.micBtnSecondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.centerText {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  text-align: center;
+  padding: 24px;
+}
+.centerMsg {
+  position: absolute;
+  max-width: 90vw;
+  color: #ffffff;
+  text-shadow:
+    0 3px 10px rgba(96, 125, 182, 0.45),
+    0 10px 34px rgba(96, 125, 182, 0.28);
+  font-family: 'Arirang', 'MyOTF', 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  font-size: clamp(16px, 4.8vw, 22px);
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  transition: opacity 800ms ease;
+}
+.centerMsgVisible {
+  opacity: 1;
+}
+
+.capsuleTop {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1700;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 8px 14px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+.capsuleDate {
+  font-size: 12px;
+}
+.capsuleSub {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.bottomToggles {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1700;
+  display: flex;
+  gap: 10px;
+}
+.toggleBtn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.22); /* whiter glass base */
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+}
+.toggleActive {
+  background: rgba(91, 125, 229, 0.35);
+  border-color: rgba(91, 125, 229, 0.6);
 }
 
 

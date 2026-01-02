@@ -47,6 +47,32 @@ body.theme-dark {
     var(--bg);
 }
 
+/* Pretendard variable font (CDN) for UI elements like modals/buttons */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+
+/* Arirang typeface for Korean tagline */
+@font-face {
+  font-family: 'Arirang';
+  src:
+    local('Arirang'),
+    local('Arirang-Regular'),
+    url('/type/arirang.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Fallback OTF (if Arirang fails) */
+@font-face {
+  font-family: 'MyOTF';
+  src:
+    local('MyOTF'),
+    url('/type/my.otf') format('opentype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 a {
   color: inherit;
   text-decoration: none;

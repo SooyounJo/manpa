@@ -1,0 +1,153 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 2200;
+  background: rgba(8, 10, 16, 0.35);
+}
+
+.overlayPlain {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 2200;
+  background: rgba(8, 10, 16, 0.35); /* no blur for plain modal */
+}
+
+.overlayDim {
+  backdrop-filter: blur(8px) saturate(135%) contrast(105%);
+  -webkit-backdrop-filter: blur(8px) saturate(135%) contrast(105%);
+}
+
+.modal {
+  width: min(76vw, 280px);
+  height: min(60vw, 220px); /* a bit shorter than width */
+  border-radius: 24px;
+  padding: 18px 16px;
+  /* solid glassmorphism with subtle stroke */
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  position: relative;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.12) 45%, rgba(255,255,255,0.0) 60%) ;
+  pointer-events: none;
+}
+
+.modalPlain {
+  width: min(76vw, 280px);
+  height: min(60vw, 220px);
+  border-radius: 24px;
+  padding: 18px 16px;
+  background: rgba(255, 255, 255, 0.18); /* solid white glass, no gradient */
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #fff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+}
+.overlayDim {
+  animation: overlayDimIn 150ms ease both;
+}
+
+.header {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.body {
+  font-size: 14px;
+  color: rgba(255,255,255,0.9);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.pickerButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.btnPrimary,
+.btnSecondary {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  padding: 10px 14px;
+  border-radius: 999px; /* capsules everywhere */
+  font-size: 14px;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+}
+.btnPrimary {
+  /* neutral white glass */
+  background: rgba(255, 255, 255, 0.28); /* whiter base */
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+.btnSecondary {
+  background: rgba(255, 255, 255, 0.18); /* whiter base */
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+/* Mode picker - buttons only */
+.pickerStack {
+  display: grid;
+  gap: 12px;
+  width: auto;
+  justify-items: center; /* center buttons horizontally */
+  text-align: center;
+  margin: 0 auto;
+}
+.pickerBtn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.26); /* whiter base */
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px; /* capsule */
+  font-size: 14px;
+  width: min(40vw, 140px); /* narrower width */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+}
+
+@keyframes overlayDimIn {
+  from { background: rgba(8, 10, 16, 0.0); }
+  to   { background: rgba(8, 10, 16, 0.45); }
+}
+
+

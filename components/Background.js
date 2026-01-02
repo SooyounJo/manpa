@@ -1,0 +1,131 @@
+import { memo } from 'react';
+import styles from '../styles/Background.module.css';
+
+const waves = [
+  // group 1 (topmost layer)
+  { id: '1-1', group: 1, src: '/wave/1-1.png' },
+  { id: '1-2', group: 1, src: '/wave/1-2.png' },
+  { id: '1-3', group: 1, src: '/wave/1-3.png' },
+  { id: '1-4', group: 1, src: '/wave/1-4.png' },
+  { id: '1-5', group: 1, src: '/wave/1-5.png' },
+  // group 2
+  { id: '2-1', group: 2, src: '/wave/2-1.png' },
+  { id: '2-2', group: 2, src: '/wave/2-2.png' },
+  { id: '2-3', group: 2, src: '/wave/2-3.png' },
+  { id: '2-4', group: 2, src: '/wave/2-4.png' },
+  // group 3
+  { id: '3-1', group: 3, src: '/wave/3-1.png' },
+  { id: '3-2', group: 3, src: '/wave/3-2.png' },
+  { id: '3-3', group: 3, src: '/wave/3-3.png' },
+  // group 4 (lowest layer)
+  { id: '4-1', group: 4, src: '/wave/4-1.png' },
+  { id: '4-2', group: 4, src: '/wave/4-2.png' },
+  { id: '4-3', group: 4, src: '/wave/4-3.png' },
+  { id: '4-4', group: 4, src: '/wave/4-4.png' },
+];
+
+function Background({ visibleIds, exiting, reenterGroups, exitGroups }) {
+  const computeZIndex = (group, id) => {
+    // Ensure group 1 > 2 > 3 > 4
+    const baseByGroup = { 1: 400, 2: 300, 3: 200, 4: 100 };
+    const base = baseByGroup[group] || 0;
+    // Within a group: x-1 highest, then x-2, x-3, x-4, x-5...
+    const suffix = parseInt(id.split('-')[1], 10);
+    const offset = 50 - (isNaN(suffix) ? 0 : suffix); // higher when suffix is smaller
+    return base + offset;
+  };
+
+  const computeFloat = (group, id) => {
+    const suffix = parseInt(id.split('-')[1], 10) || 0;
+    // Deterministic pseudo-randoms per image for variety
+    const seed1 = (group * 997 + suffix * 433) % 3000; // 0..2999
+    const seed2 = (group * 593 + suffix * 271) % 2000; // 0..1999
+    const durationMs = 5000 + seed1; // 5000..7999ms
+    const delayMs = seed2; // 0..1999ms
+    return { durationMs, delayMs };
+  };
+
+  const computeExit = (group, id) => {
+    // group-specific outward directions
+    // 2: up, 3: left, 4: right; 1 stays
+    if (group === 1) return { x: 0, y: 0 };
+    const suffix = parseInt(id.split('-')[1], 10) || 0;
+    const magnitudeVw = 40 + (suffix * 5); // 45..65vw
+    const magnitudeVh = 40 + (suffix * 4); // 44..56vh
+    if (group === 2) return { x: 0, y: -magnitudeVh };
+    if (group === 3) return { x: -magnitudeVw, y: 0 };
+    if (group === 4) return { x: magnitudeVw, y: 0 };
+    return { x: 0, y: 0 };
+  };
+
+  const computeEnterOffset = (id) => {
+    const dx = 8; // vw
+    const dy = 8; // vh
+    switch (id) {
+      // Group 1
+      case '1-1': return { x: `${dx}vw`,  y: `-${dy}vh` }; // top-right → center
+      case '1-2': return { x: `${dx}vw`,  y: `${dy}vh` };  // bottom-right
+      case '1-3': return { x: `-${dx}vw`, y: `0` };        // left → right
+      case '1-4': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left
+      case '1-5': return { x: `-${dx}vw`, y: `${dy}vh` };  // bottom-left
+      // Group 2
+      case '2-1': return { x: `${dx}vw`,  y: `0` };        // right → left
+      case '2-2': return { x: `-${dx}vw`, y: `0` };        // left → right
+      case '2-3': return { x: `0`,        y: `${dy}vh` };  // bottom → top
+      case '2-4': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left → bottom-right
+      // Group 3
+      case '3-1': return { x: `${dx}vw`,  y: `${dy}vh` };  // bottom-right → top-left
+      case '3-2': return { x: `${dx}vw`,  y: `-${dy}vh` }; // top-right → bottom-left
+      case '3-3': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left → bottom-right
+      // Group 4
+      case '4-1': return { x: `${dx}vw`,  y: `0` };        // right → left
+      case '4-2': return { x: `0`,        y: `${dy}vh` };  // bottom → top
+      case '4-3': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left → bottom-right
+      case '4-4': return { x: `${dx}vw`,  y: `0` };        // right → left
+      default:    return { x: `0`,        y: `40px` };
+    }
+  };
+
+  return (
+    <div className={styles.stage} aria-hidden>
+      {waves.map((wave) => {
+        const isVisible = visibleIds?.has(wave.id);
+        const { durationMs, delayMs } = computeFloat(wave.group, wave.id);
+        const reenter = reenterGroups?.has?.(wave.group);
+        const enter = computeEnterOffset(wave.id);
+        const invert = (v) => (v === '0' ? '0' : (v.startsWith('-') ? v.slice(1) : `-${v}`));
+        const exitXStr = invert(enter.x);
+        const exitYStr = invert(enter.y);
+        return (
+          <img
+            key={wave.id}
+            src={wave.src}
+            alt=""
+            className={[
+              styles.wave,
+              styles[`layer${wave.group}`],
+              isVisible ? styles.visible : '',
+              reenter ? styles.reenter : '',
+              !reenter && ((exitGroups && exitGroups.has?.(wave.group)) || (exiting && wave.group !== 1)) ? styles.exit : '',
+            ].join(' ')}
+            style={{
+              zIndex: computeZIndex(wave.group, wave.id),
+              ['--floatDur']: `${durationMs}ms`,
+              ['--floatDelay']: `${delayMs}ms`,
+              ['--exitX']: exitXStr,
+              ['--exitY']: exitYStr,
+              ['--enterX']: enter.x,
+              ['--enterY']: enter.y,
+            }}
+            decoding="async"
+            loading="eager"
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export default memo(Background);
+
+

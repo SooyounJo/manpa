@@ -9,5 +9,7 @@
 *.webp binary
 *.ico binary
 *.svg -text
+*.woff2 binary
+*.otf binary
 
 
