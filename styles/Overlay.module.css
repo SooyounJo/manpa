@@ -15,9 +15,7 @@
   place-items: center;
   padding: 24px;
   z-index: 2200;
-  background: rgba(8, 10, 16, 0.40); /* slightly darker dim */
-  backdrop-filter: blur(12px) saturate(120%); /* heavier blur per request */
-  -webkit-backdrop-filter: blur(12px) saturate(120%);
+  background: rgba(0, 0, 0, 0.45); /* iOS-like dim */
 }
 
 .overlayDim {
@@ -59,14 +57,14 @@
 }
 
 .modalPlain {
-  width: min(76vw, 280px);
-  height: min(60vw, 220px);
-  border-radius: 24px;
-  padding: 18px 16px;
-  background: rgba(255, 255, 255, 0.28); /* less transparent */
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  width: min(88vw, 320px);
+  max-width: 320px;
+  border-radius: 14px;
+  padding: 18px 16px 0 16px; /* actions have own row */
+  background: rgba(0, 0, 0, 0.86); /* solid black feel */
+  border: 1px solid rgba(255, 255, 255, 0.10);
   color: #fff;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,21 +77,53 @@
 }
 
 .header {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 600;
+  margin: 0 0 8px 0;
 }
 .body {
-  font-size: 14px;
-  color: rgba(255,255,255,0.9);
-  line-height: 1.6;
-  margin-bottom: 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.5;
+  margin: 0 0 12px 0;
 }
 .actions {
   display: flex;
   gap: 10px;
   justify-content: center;
   margin-top: 16px;
+}
+.actionsSegmented {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  width: 100%;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+.actionSeg {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  padding: 14px 0;
+  flex: 1;
+  cursor: pointer;
+}
+.actionLeft {
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+.actionRight {}
+.actionSeg:active,
+.actionSeg:focus-visible {
+  background: rgba(255, 255, 255, 0.10);
+  outline: none;
+}
+.actionDivider {
+  display: none; /* reserved if we want a separate element; border handles the line */
 }
 .pickerButtons {
   display: grid;
@@ -112,13 +142,13 @@
   font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
 }
 .btnPrimary {
-  /* neutral white glass */
-  background: rgba(255, 255, 255, 0.28); /* whiter base */
+  /* for black modal */
+  background: rgba(255, 255, 255, 0.16);
   color: #fff;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 .btnSecondary {
-  background: rgba(255, 255, 255, 0.18); /* whiter base */
+  background: rgba(255, 255, 255, 0.10);
   color: #fff;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
 }

@@ -2,7 +2,8 @@
   position: fixed;
   inset: 0;
   z-index: 0;
-  background: #000; /* black stage per spec */
+  background: var(--stageColor, #000); /* configurable stage color */
+  transition: background 500ms ease;
   pointer-events: none; /* make purely decorative */
   width: 100vw;
   height: 100dvh; /* mobile viewport including dynamic bars */
@@ -10,7 +11,9 @@
   /* subtle upscaling for all waves */
   --startScale: 0.98;
   --endScale: 1.02; /* tweak here for stronger or weaker overall size */
-  --enterDur: 800ms; /* faster entrance */
+  --enterDur: 600ms; /* faster entrance */
+  --ampX: 8px; /* default float amplitude X */
+  --ampY: 5px; /* default float amplitude Y */
 }
 
 .wave {
@@ -31,6 +34,18 @@
   /* per-image animation tuning (overridable from inline styles) */
   --floatDur: 6000ms;
   --floatDelay: 0ms;
+}
+
+.dim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 80% at 50% 40%, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0.45) 60%),
+    rgba(15, 25, 55, 1); /* darker indigo with vignette */
+  opacity: var(--dimOpacity, 0);
+  transition: opacity 4000ms ease;
+  pointer-events: none;
+  z-index: 3000; /* ensure above all waves */
 }
 
 .visible {
@@ -69,7 +84,7 @@
 @keyframes floatXY {
   /* start exactly where 'enter' ends to avoid any jump */
   0%   { transform: translate3d(0, 0, 0) scale(var(--endScale)); }
-  50%  { transform: translate3d(4px, -3px, 0) scale(var(--endScale)); }
+  50%  { transform: translate3d(var(--ampX), calc(var(--ampY) * -1), 0) scale(var(--endScale)); }
   100% { transform: translate3d(0, 0, 0) scale(var(--endScale)); }
 }
 
