@@ -610,6 +610,7 @@
   z-index: 1700;
   display: flex;
   gap: 12px;
+  pointer-events: none; /* decorative only */
 }
 .lightTheme .bottomToggles::before {
   content: "";

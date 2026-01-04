@@ -286,6 +286,8 @@ export default function BreathEngine({
   const lineB = current.lines?.[1] || '';
 
   // Breath control: strong exhale -> graceful advance
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+  const isiOS = /iP(hone|ad|od)/i.test(ua);
   useBreathDetector(() => {
     // If not started yet, first exhale begins the narrative
     if (!started) {
@@ -344,7 +346,7 @@ export default function BreathEngine({
         advance();
       }
     }, totalMs);
-  }, { thresholdDelta: 0.07, cooldownMs: 900 });
+  }, { thresholdDelta: isiOS ? 0.05 : 0.07, cooldownMs: 900, absMinRms: isiOS ? 0.02 : 0.06 });
 
   return (
     <>

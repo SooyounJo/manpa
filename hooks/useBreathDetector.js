@@ -2,8 +2,10 @@ import { useEffect, useRef } from 'react';
 
 // Simple breath detector based on RMS energy with hysteresis and throttle.
 export function useBreathDetector(onBreath, opts = {}) {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+  const isiOS = /iP(hone|ad|od)/i.test(ua);
   const thresholdDelta = typeof opts.thresholdDelta === 'number' ? opts.thresholdDelta : 0.18; // stricter by default
-  const absMinRms = typeof opts.absMinRms === 'number' ? opts.absMinRms : 0.06; // absolute floor to reject noise
+  const absMinRms = typeof opts.absMinRms === 'number' ? opts.absMinRms : (isiOS ? 0.02 : 0.06); // iOS mics often lower RMS
   const cooldownMs = typeof opts.cooldownMs === 'number' ? opts.cooldownMs : 1800;
   const ctxRef = useRef(null);
   const srcRef = useRef(null);
@@ -29,6 +31,23 @@ export function useBreathDetector(onBreath, opts = {}) {
         if (!mounted) return;
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         ctxRef.current = ctx;
+        // iOS/Safari: ensure AudioContext is resumed on first gesture/visibility
+        const unlock = () => {
+          try {
+            if (ctxRef.current && ctxRef.current.state !== 'running') {
+              ctxRef.current.resume().catch(() => {});
+            }
+          } catch {}
+        };
+        const onVisibility = () => {
+          if (!document.hidden) unlock();
+        };
+        window.addEventListener('touchend', unlock, { passive: true });
+        window.addEventListener('pointerdown', unlock, { passive: true });
+        window.addEventListener('click', unlock, { passive: true });
+        window.addEventListener('keydown', unlock, { passive: true });
+        document.addEventListener('visibilitychange', onVisibility);
+        window.addEventListener('focus', unlock);
         const src = ctx.createMediaStreamSource(stream);
         srcRef.current = src;
         const ana = ctx.createAnalyser();
@@ -73,6 +92,12 @@ export function useBreathDetector(onBreath, opts = {}) {
       mounted = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (ctxRef.current) ctxRef.current.close();
+      window.removeEventListener('touchend', () => {});
+      window.removeEventListener('pointerdown', () => {});
+      window.removeEventListener('click', () => {});
+      window.removeEventListener('keydown', () => {});
+      document.removeEventListener('visibilitychange', () => {});
+      window.removeEventListener('focus', () => {});
       if (srcRef.current) {
         try {
           const tracks = srcRef.current.mediaStream?.getTracks?.() || [];

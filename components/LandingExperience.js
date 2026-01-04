@@ -341,10 +341,10 @@ export default function LandingExperience() {
               </div>
               <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
             </div>
-            <div className={`${styles.bottomToggles} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
-              <button className={`${styles.toggleBtn} ${styles.toggleBtn478} ${mode478 ? styles.toggleActive478 : ''}`} onClick={() => setMode478((v)=>!v)}>4-7-8</button>
-              <button className={`${styles.toggleBtn} ${mode446 ? styles.toggleActive : ''}`} onClick={() => setMode446((v)=>!v)}>4-4-6</button>
-              <button className={`${styles.toggleBtn} ${modeHalf ? styles.toggleActive : ''}`} onClick={() => setModeHalf((v)=>!v)}>1:2</button>
+            <div className={`${styles.bottomToggles} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`} aria-hidden>
+              <button className={`${styles.toggleBtn} ${styles.toggleBtn478} ${mode478 ? styles.toggleActive478 : ''}`} disabled>4-7-8</button>
+              <button className={`${styles.toggleBtn} ${mode446 ? styles.toggleActive : ''}`} disabled>4-4-6</button>
+              <button className={`${styles.toggleBtn} ${modeHalf ? styles.toggleActive : ''}`} disabled>1:2</button>
             </div>
           </>
         ) : null}
