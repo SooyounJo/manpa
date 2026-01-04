@@ -8,6 +8,7 @@ export default function BreathEngine({
   onBgColor,
   onFirstBeat,
   onFinal,
+  onSectionChange,
   stageColorDefault = '#DBE7EA',
 }) {
   const beats = useMemo(() => narrativeBeats.filter(b => !b.hidden), []);
@@ -77,6 +78,13 @@ export default function BreathEngine({
     clearTimers();
     const b = beats[i];
     if (!b) return;
+    // notify section/chapter change (use numeric prefix if available)
+    if (b?.id) {
+      const m = String(b.id).match(/^(\d+)/);
+      if (m && onSectionChange) {
+        onSectionChange(m[1]);
+      }
+    }
     // background color: only change if script provides a color (persist otherwise)
     if (b.bgColor) onBgColor?.(b.bgColor);
     // audio: play immediately only for non-exhale beats; exhale SFX starts on exhale trigger
@@ -109,6 +117,11 @@ export default function BreathEngine({
       }
       scheduledNextRef.current = setTimeout(() => {
         setIsPausing(false);
+        const lastId = (beats[beats.length - 1] || {}).id;
+        if (b.id === lastId) {
+          onFinal?.();
+          return;
+        }
         const n = Math.min(i + 1, beats.length - 1);
         setIdx(n);
         startBeat(n);

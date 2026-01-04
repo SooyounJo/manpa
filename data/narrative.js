@@ -4,9 +4,9 @@
 export const narrativeBeats = [
   // Chapter 1 (inhale, 2s each) — bg DBE7EA
   { id: '1-1', trigger: 'inhale', lines: ["오늘 몇 번의 파도가\n당신의 마음 속에 일었나요?"], lineMs: 2000, bgColor: '#DBE7EA' },
-  { id: '1-2', trigger: 'inhale', lines: ["아주 작은 흔들림부터, 조금 더 크게 밀려온 순간들까지"], lineMs: 2000, bgColor: '#DBE7EA' },
-  { id: '1-3', trigger: 'inhale', lines: ["지금은 그것들을 억지로 멀리 보내지 않아도 됩니다"], lineMs: 2000, bgColor: '#DBE7EA' },
-  { id: '1-4', trigger: 'inhale', lines: ["그저 천천히, 하나씩 떠올려 봅니다"], lineMs: 2000, bgColor: '#DBE7EA' },
+  { id: '1-2', trigger: 'inhale', lines: ["아주 작은 흔들림부터,\n조금 더 크게 밀려온 순간들까지"], lineMs: 2000, bgColor: '#DBE7EA' },
+  { id: '1-3', trigger: 'inhale', lines: ["지금은 그것들을 억지로\n멀리 보내지 않아도 됩니다"], lineMs: 2000, bgColor: '#DBE7EA' },
+  { id: '1-4', trigger: 'inhale', lines: ["그저 천천히,\n하나씩 떠올려 봅니다"], lineMs: 2000, bgColor: '#DBE7EA' },
   // Interlude → fade to black (pause 7s)
   { id: 'i-1', trigger: 'pause', lines: [], lineMs: 0, interludeMs: 7000, bgColor: '#000000' },
 
@@ -59,10 +59,8 @@ export const narrativeBeats = [
   { id: 'i-10', trigger: 'pause', lines: [], lineMs: 0, interludeMs: 7000 },
   { id: '8-ex', trigger: 'exhale', lines: [], lineMs: 0, interludeMs: 8000, audio: 'exhale7.mp3' },
   // Interlude → black (pause 7s)
-  { id: 'i-11', trigger: 'pause', lines: [], lineMs: 0, interludeMs: 7000, bgColor: '#000000' },
+  { id: 'i-11', trigger: 'pause', lines: [], lineMs: 0, interludeMs: 5000, bgColor: '#000000' },
 
-  // Chapter 9
-  { id: '9-1', trigger: 'inhale', lines: ["그날 이후 사람들은 기억한다\n만 개의 파도를 잠재우는 피리", "마음을 어루만지는 숨결 만파식적"], lineMs: 3000 },
 
   // Keep potential finals hidden for now
   { id: 'final-1', trigger: 'none', lines: [], lineMs: 0, interludeMs: 0, hidden: true },
