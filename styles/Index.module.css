@@ -189,6 +189,12 @@
   padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
     calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
 }
+.lightTheme .centerMsg {
+  color: #0d1426; /* near-black for bright background */
+  text-shadow:
+    0 6px 18px rgba(66, 87, 145, 0.40), /* indigo-ish soft spread */
+    0 14px 32px rgba(66, 87, 145, 0.28);
+}
 
 .brand {
   font-size: clamp(88px, 19vw, 172px);

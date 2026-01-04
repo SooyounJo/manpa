@@ -63,6 +63,12 @@
     reenter 900ms ease-out forwards,
     floatXY var(--floatDur) ease-in-out 900ms infinite alternate;
 }
+.reenterSoft {
+  /* opacity/blur-only re-entry to avoid spatial jump */
+  animation:
+    reenterFade 700ms ease-out forwards,
+    floatXY var(--floatDur) ease-in-out 700ms infinite alternate;
+}
 .layer1 { z-index: 40; }
 .layer2 { z-index: 30; }
 .layer3 { z-index: 20; }
@@ -104,6 +110,19 @@
     opacity: 0;
     transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--endScale));
     filter: blur(var(--enterBlur));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--endScale));
+    filter: blur(0px);
+  }
+}
+
+@keyframes reenterFade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) scale(var(--endScale));
+    filter: blur(6px);
   }
   to {
     opacity: 1;

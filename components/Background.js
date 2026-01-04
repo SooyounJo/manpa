@@ -24,7 +24,7 @@ const waves = [
   { id: '4-4', group: 4, src: '/wave/4-4.png' },
 ];
 
-function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1 }) {
+function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1, softReenterGroups }) {
   const computeZIndex = (group, id) => {
     // Ensure group 1 > 2 > 3 > 4
     const baseByGroup = { 1: 400, 2: 300, 3: 200, 4: 100 };
@@ -114,6 +114,7 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
         const isVisible = visibleIds?.has(wave.id);
         const { durationMs, delayMs } = computeFloat(wave.group, wave.id);
         const reenter = reenterGroups?.has?.(wave.group);
+        const softReenter = softReenterGroups?.has?.(wave.group);
         const enter = computeEnterOffset(wave.id);
         const { ax, ay } = computeAmplitude(wave.group, wave.id);
         const invert = (v) => (v === '0' ? '0' : (v.startsWith('-') ? v.slice(1) : `-${v}`));
@@ -128,7 +129,7 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
               styles.wave,
               styles[`layer${wave.group}`],
               isVisible ? styles.visible : '',
-              reenter ? styles.reenter : '',
+              reenter ? (softReenter ? styles.reenterSoft : styles.reenter) : '',
               !reenter && ((exitGroups && exitGroups.has?.(wave.group)) || (exiting && wave.group !== 1)) ? styles.exit : '',
             ].join(' ')}
             style={{

@@ -103,41 +103,41 @@ export default function BreathEngine({
           const suf = parseInt(String(b.id).split('-')[1] || '1', 10);
           const groups = suf <= 1 ? [1] : suf === 2 ? [1,2] : suf === 3 ? [1,2,3] : [1,2,3,4];
           const reenter = suf > 1 ? [suf] : [];
-          onWaveDirective?.({ type: 'show', groups, reenter });
+          onWaveDirective?.({ type: 'show', groups, reenter, softReenter: suf > 1 });
         }
         // 2-1 exhale: line0 only 1, line1 add 2; 2-3 inhale: add 3
         if (b.id === '2-1') {
           onWaveDirective?.({ type: 'show', groups: [1] });
         }
         if (b.id === '2-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
         }
         // 3-1 exhale: start with 1+2; 3-4 inhale: add 4
         if (b.id === '3-1') {
           onWaveDirective?.({ type: 'show', groups: [1,2] });
         }
         if (b.id === '3-4') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+          onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
         }
         // 4-1, 4-2, 4-3 (two lines)
         if (b.id === '4-1') {
           onWaveDirective?.({ type: 'show', groups: [1] });
         }
         if (b.id === '4-2') {
-          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
         }
         if (b.id === '4-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
         }
         // 5-1, 5-2, 5-3 (two lines)
         if (b.id === '5-1') {
           onWaveDirective?.({ type: 'show', groups: [1] });
         }
         if (b.id === '5-2') {
-          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
         }
         if (b.id === '5-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
         }
         // Pauses: schedule last-2s reveals per spec
         if (b.trigger === 'pause') {
@@ -232,19 +232,19 @@ export default function BreathEngine({
     try {
       // 2-1 exhale: line 1 → add group 2
       if (b.id === '2-1' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+        onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
       }
       // 3-1 exhale: line 1 → add group 3
       if (b.id === '3-1' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+        onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
       }
       // 4-3 exhale: line 1 → add group 4
       if (b.id === '4-3' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
       }
       // 5-3 exhale: line 1 → add group 4 and keep all afterwards
       if (b.id === '5-3' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
       }
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps

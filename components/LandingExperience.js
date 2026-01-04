@@ -49,6 +49,8 @@ export default function LandingExperience() {
   const [breathCount, setBreathCount] = useState(0);
   // track last directive to avoid redundant state churn
   const lastWaveKeyRef = useRef('');
+  // soft re-entry groups (opacity-only)
+  const [softReenterGroups, setSoftReenterGroups] = useState(() => new Set());
   const incrementBreathCount = () => {
     if (typeof window === 'undefined') return;
     try {
@@ -179,6 +181,7 @@ export default function LandingExperience() {
       directive.groups.forEach((g) => ids.push(...(GROUPS.current[g] || [])));
       setVisibleIds(new Set(ids));
       setReenterGroups(new Set(directive.reenter || []));
+      setSoftReenterGroups(new Set(directive.softReenter ? (directive.reenter || []) : []));
       setExitGroups(new Set());
       return;
     }
@@ -211,8 +214,9 @@ export default function LandingExperience() {
         isIntro={!showEngine}
         dimOverlay={((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000')) ? (showFinal ? 0.75 : 0.65) : 0}
         ampScale={ampScale}
+        softReenterGroups={softReenterGroups}
       />
-      <main className={styles.main}>
+      <main className={`${styles.main} ${stageColor && String(stageColor).toUpperCase() === '#DBE7EA' ? styles.lightTheme : ''}`}>
         <OpenInChromePrompt />
         {/* sync mini logo height with capsule height */}
         {showEngine ? null : null}
@@ -295,7 +299,7 @@ export default function LandingExperience() {
               onSectionChange={(chapter) => {
                 // Intensify waves on chapter 8, normal elsewhere
                 if (String(chapter) === '8') {
-                  setAmpScale(1.8);
+                  setAmpScale(2.2);
                 } else {
                   setAmpScale(1);
                 }
