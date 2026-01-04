@@ -370,15 +370,6 @@ export default function BreathEngine({
           </>
         )}
       </div>
-      {/* Debug: next-only button */}
-      <button
-        type="button"
-        className={`${styles.toggleBtn} ${styles.debugNext} ${styles.debugBtn}`}
-        onClick={next}
-        aria-label="다음"
-      >
-        →
-      </button>
     </>
   );
 }

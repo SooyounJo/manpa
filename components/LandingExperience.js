@@ -186,19 +186,15 @@ export default function LandingExperience() {
       return;
     }
     if (directive.type === 'flashHide' && Array.isArray(directive.hideGroups)) {
-      // briefly fade-out specified groups (simple exit effect)
-      setExitGroups(new Set(directive.hideGroups));
-      // actually hide after a short delay to keep DOM light
-      setTimeout(() => {
-        setVisibleIds((prev) => {
-          const toHide = new Set();
-          directive.hideGroups.forEach((g) => (GROUPS.current[g] || []).forEach((id) => toHide.add(id)));
-          const next = new Set();
-          prev.forEach((id) => { if (!toHide.has(id)) next.add(id); });
-          return next;
-        });
-        setExitGroups(new Set());
-      }, typeof directive.ms === 'number' ? Math.max(0, directive.ms) : 600);
+      // Story-only: instantly hide specified groups (no opacity animation)
+      setVisibleIds((prev) => {
+        const toHide = new Set();
+        directive.hideGroups.forEach((g) => (GROUPS.current[g] || []).forEach((id) => toHide.add(id)));
+        const next = new Set();
+        prev.forEach((id) => { if (!toHide.has(id)) next.add(id); });
+        return next;
+      });
+      setExitGroups(new Set());
       return;
     }
   };

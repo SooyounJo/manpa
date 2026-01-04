@@ -26,10 +26,14 @@
   /* default enter offset; overridden per-image via CSS vars */
   --enterX: 0;
   --enterY: 40px;
-  --enterBlur: 6px;
+  --enterBlur: 3px; /* lower blur to reduce perceived flicker */
   transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--startScale));
   filter: blur(var(--enterBlur));
   will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--startScale));
   image-rendering: auto;
   /* per-image animation tuning (overridable from inline styles) */
   --floatDur: 6000ms;
@@ -51,7 +55,7 @@
 .visible {
   /* entrance then continuous float */
   animation:
-    enter var(--enterDur) ease-out forwards,
+    enter var(--enterDur) cubic-bezier(.16,.84,.44,1) forwards,
     floatXY var(--floatDur) ease-in-out calc(var(--enterDur) + var(--floatDelay)) infinite alternate;
 }
 
@@ -60,7 +64,7 @@
 }
 .reenter {
   animation:
-    reenter 900ms ease-out forwards,
+    reenter 900ms cubic-bezier(.16,.84,.44,1) forwards,
     floatXY var(--floatDur) ease-in-out 900ms infinite alternate;
 }
 .reenterSoft {
@@ -121,13 +125,12 @@
 @keyframes reenterFade {
   from {
     opacity: 0;
-    transform: translate3d(0, 0, 0) scale(var(--endScale));
-    filter: blur(6px);
+    transform: translate3d(0, 0, 0) scale(var(--endScale)); /* no filter to avoid flicker */
   }
   to {
     opacity: 1;
     transform: translate3d(0, 0, 0) scale(var(--endScale));
-    filter: blur(0px);
+    /* no filter */
   }
 }
 
