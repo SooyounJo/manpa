@@ -128,8 +128,12 @@ export default function BreathEngine({
     }
   }, [beats, onBgColor, playOnce, stop, stageColorDefault]);
 
-  // init (wait for first exhale; do not auto-start)
+  // init: auto-start on first inhale beat
   useEffect(() => {
+    // start immediately on mount (inhale beats auto-run)
+    setStarted(true);
+    startBeat(0);
+    onFirstBeat?.();
     // keyboard shortcuts
     const onKey = (e) => {
       if (e.key === 'ArrowRight') next();
@@ -178,9 +182,9 @@ export default function BreathEngine({
     if (b.audio) playOnce(`/music/${b.audio}`);
     exhaleLockedRef.current = true;
     // compute total display time and show countdown in label
-    // For exhale beats: waves-only → prefer interludeMs, fallback 3000ms
-    const totalMs = Math.max(1000, (b.interludeMs != null ? b.interludeMs : 3000));
-    const secs = Math.ceil(totalMs / 1000);
+    // Exhale countdown: 8 seconds (use interludeMs if longer)
+    const totalMs = Math.max(b.interludeMs != null ? b.interludeMs : 8000, 8000);
+    const secs = Math.ceil(totalMs / 1000); // will be >= 7
     setCountdown(secs);
     setShowSeconds(true);
     if (countdownRef.current) clearInterval(countdownRef.current);
