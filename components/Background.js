@@ -24,7 +24,7 @@ const waves = [
   { id: '4-4', group: 4, src: '/wave/4-4.png' },
 ];
 
-function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0 }) {
+function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1 }) {
   const computeZIndex = (group, id) => {
     // Ensure group 1 > 2 > 3 > 4
     const baseByGroup = { 1: 400, 2: 300, 3: 200, 4: 100 };
@@ -60,18 +60,24 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
 
   const computeAmplitude = (group, id) => {
     const suffix = parseInt(id.split('-')[1], 10) || 0;
+    // Special handling for specific assets
+    if (id === '2-2') {
+      // Make this slice almost static to avoid left-edge gaps
+      return { ax: 0.5, ay: 1 };
+    }
     if (group === 1) {
-      // Keep top layer almost stationary to avoid edge gaps
-      const ax = 1; // very subtle horizontal drift
-      const ay = 2; // subtle vertical drift
+      // Keep top layer very subtle
+      const ax = 1;
+      const ay = 2;
       return { ax, ay };
     }
-    // Mild variance for deeper layers
+    // Mild variance for deeper layers, with optional global multiplier
     const seedX = (group * 101 + suffix * 13) % 5; // 0..4
     const seedY = (group * 103 + suffix * 17) % 5; // 0..4
-    const ax = 6 + seedX; // 6..10px
-    const ay = 4 + seedY; // 4..8px
-    return { ax, ay };
+    const baseAx = 6 + seedX; // 6..10px
+    const baseAy = 4 + seedY; // 4..8px
+    const mult = ampScale || 1;
+    return { ax: baseAx * mult, ay: baseAy * mult };
   };
 
   const computeEnterOffset = (id) => {

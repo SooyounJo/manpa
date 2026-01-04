@@ -5,6 +5,7 @@ import Background from '../components/Background';
 import GlassModal from '../components/GlassModal';
 import BreathEngine from '../components/BreathEngine';
 import FinalOverlay from './FinalOverlay';
+import OpenInChromePrompt from './OpenInChromePrompt';
 import { useAudio } from '../hooks/useAudio';
 
 export default function LandingExperience() {
@@ -37,10 +38,29 @@ export default function LandingExperience() {
   const [capsuleHeight, setCapsuleHeight] = useState(0);
   const { playLoop, stopLoop, resumeLoop } = useAudio();
   const bgmStartedRef = useRef(false);
+  const [ampScale, setAmpScale] = useState(1);
+  const [breathCount, setBreathCount] = useState(0);
+  const incrementBreathCount = () => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cur = parseInt(window.localStorage.getItem('manpa_breath_count') || '0', 10) || 0;
+      const next = cur + 1;
+      window.localStorage.setItem('manpa_breath_count', String(next));
+      setBreathCount(next);
+    } catch {}
+  };
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cur = parseInt(window.localStorage.getItem('manpa_breath_count') || '0', 10) || 0;
+      setBreathCount(cur);
+    } catch {}
+  }, []);
 
   const [showHeadphoneHint, setShowHeadphoneHint] = useState(true);
   const [introReady, setIntroReady] = useState(false);
   const [showBreathGuide, setShowBreathGuide] = useState(false);
+  const [showExhaleHint, setShowExhaleHint] = useState(false);
 
   // Headphone hint then start intro
   useEffect(() => {
@@ -149,8 +169,10 @@ export default function LandingExperience() {
         stageColor={stageColor}
         isIntro={!showEngine}
         dimOverlay={((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000')) ? (showFinal ? 0.75 : 0.65) : 0}
+        ampScale={ampScale}
       />
       <main className={styles.main}>
+        <OpenInChromePrompt />
         {/* sync mini logo height with capsule height */}
         {showEngine ? null : null}
         {showHeadphoneHint ? (
@@ -190,10 +212,18 @@ export default function LandingExperience() {
                setBrandVisible(false);
                setTaglineVisible(false);
                const g = setTimeout(() => {
-                 setShowBreathGuide(false);
-                 setShowEngine(true);
-                 setStageColor('#DBE7EA'); // start story on bright background
-                 setShowTopCapsule(true); // ensure capsules are shown from the first narrative message
+                // after 4s primary guide, show 3s exhale hint before starting
+                setShowBreathGuide(false);
+                setShowExhaleHint(true);
+                const h = setTimeout(() => {
+                  setShowExhaleHint(false);
+                  // start new breathing session; count up
+                  incrementBreathCount();
+                  setShowEngine(true);
+                  setStageColor('#DBE7EA'); // start story on bright background
+                  setShowTopCapsule(true); // ensure capsules are shown from the first narrative message
+                }, 3000);
+                postTimersRef.current.push(h);
                }, 4000);
                postTimersRef.current.push(g);
             }, 2000));
@@ -203,7 +233,15 @@ export default function LandingExperience() {
            <div className={styles.centerText}>
              <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
              <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
-               크게 4초 정도 숨을 입으로<br/>들이쉬고 내뱉어주세요
+              4초간 들이쉬고, 잠시 멈춘 뒤<br/>8초 동안 '입으로' 내쉬어 보세요
+             </div>
+           </div>
+         ) : null}
+         {showExhaleHint ? (
+           <div className={styles.centerText}>
+             <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
+             <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
+               날숨은 소리가 마이크 가까이<br/>잘 들리도록 크게 내쉬어주세요
              </div>
            </div>
          ) : null}
@@ -212,6 +250,14 @@ export default function LandingExperience() {
             <BreathEngine
               onBgColor={setStageColor}
               onFirstBeat={() => setShowTopCapsule(true)}
+              onSectionChange={(chapter) => {
+                // Intensify waves on chapter 8, normal elsewhere
+                if (String(chapter) === '8') {
+                  setAmpScale(1.8);
+                } else {
+                  setAmpScale(1);
+                }
+              }}
               onFinal={() => {
                 // Dark waves-only for 3s, then to mic input overlay
                 setStageColor('#000');
@@ -232,7 +278,7 @@ export default function LandingExperience() {
               <div className={styles.capsuleDate}>
                 {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
               </div>
-              <div className={styles.capsuleSub}>1번째 호흡</div>
+              <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
             </div>
             <div className={`${styles.bottomToggles} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
               <button className={`${styles.toggleBtn} ${styles.toggleBtn478} ${mode478 ? styles.toggleActive478 : ''}`} onClick={() => setMode478((v)=>!v)}>4-7-8</button>
@@ -246,7 +292,7 @@ export default function LandingExperience() {
             <div className={styles.capsuleDate}>
               {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
             </div>
-            <div className={styles.capsuleSub}>1번째 호흡</div>
+            <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
           </div>
         ) : null}
         {showFinal ? (
@@ -254,6 +300,8 @@ export default function LandingExperience() {
             onRestart={() => {
               setShowFinal(false);
               setStageColor('#DBE7EA');
+              // count next session
+              incrementBreathCount();
               setShowEngine(true);
               setShowTopCapsule(true);
             }}

@@ -3,12 +3,12 @@ import { narrativeBeats } from '../data/narrative';
 import { useAudio } from '../hooks/useAudio';
 import { useBreathDetector } from '../hooks/useBreathDetector';
 import styles from '../styles/Index.module.css';
-import DebugNav from './DebugNav';
 
 export default function BreathEngine({
   onBgColor,
   onFirstBeat,
   onFinal,
+  onSectionChange,
   stageColorDefault = '#DBE7EA',
 }) {
   const beats = useMemo(() => narrativeBeats.filter(b => !b.hidden), []);
@@ -27,6 +27,7 @@ export default function BreathEngine({
   const exhaleLockedRef = useRef(false);
   const [showSeconds, setShowSeconds] = useState(false);
   const [started, setStarted] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
 
   // Helpers
   const clearTimers = () => {
@@ -77,6 +78,13 @@ export default function BreathEngine({
     clearTimers();
     const b = beats[i];
     if (!b) return;
+    // notify section/chapter change (use numeric prefix if available)
+    if (b?.id) {
+      const m = String(b.id).match(/^(\d+)/);
+      if (m && onSectionChange) {
+        onSectionChange(m[1]);
+      }
+    }
     // background color: only change if script provides a color (persist otherwise)
     if (b.bgColor) onBgColor?.(b.bgColor);
     // audio: play immediately only for non-exhale beats; exhale SFX starts on exhale trigger
@@ -88,16 +96,38 @@ export default function BreathEngine({
     }
     // show capsule in waiting state (exhale waits for trigger, inhale auto-runs)
     setShowCountdown(true);
-    setPromptLabel(b.trigger === 'exhale' ? '숨을 불어넣기' : '숨을 들이쉬기');
+    setPromptLabel(b.trigger === 'exhale' ? '숨을 불어넣기' : (b.trigger === 'pause' ? '멈춤' : '숨을 들이쉬기'));
     setCountdown(0);
     setPromptBlink(b.trigger === 'exhale');
     setPromptOpacity(1);
     exhaleLockedRef.current = b.trigger !== 'exhale';
-    setShowSeconds(b.trigger === 'exhale');
+    setShowSeconds(b.trigger === 'exhale' || b.trigger === 'pause');
     // interlude advance automatically when debug not used
     const totalMs =
       ((b.lines?.length || 0) * (b.lineMs || 3000)) + (b.interludeMs || 0);
     // For inhale/none triggers, auto-advance after duration with countdown
+    if (b.trigger === 'pause') {
+      // hide capsule entirely during pause, show centered '멈춤' text
+      setShowCountdown(false);
+      setIsPausing(true);
+      const totalMsPause = Math.max(b.interludeMs || 7000, 7000);
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+      scheduledNextRef.current = setTimeout(() => {
+        setIsPausing(false);
+        const lastId = (beats[beats.length - 1] || {}).id;
+        if (b.id === lastId) {
+          onFinal?.();
+          return;
+        }
+        const n = Math.min(i + 1, beats.length - 1);
+        setIdx(n);
+        startBeat(n);
+      }, totalMsPause);
+      return;
+    }
     if (b.trigger !== 'exhale' && totalMs > 0) {
       setCountdown(Math.ceil(totalMs / 1000));
       if (countdownRef.current) {
@@ -228,19 +258,35 @@ export default function BreathEngine({
     <>
       <div className={styles.centerText} aria-live="polite">
         <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
-        <div className={`${styles.timerTop} ${breathGlow ? styles.timerTopActive : styles.timerTopInactive} ${promptBlink ? styles.timerTopBlink : ''}`} style={{ opacity: promptOpacity, whiteSpace: 'pre-line' }}>
-          {`${promptLabel}\n${showSeconds && countdown ? `${countdown}초` : ''}`}
-        </div>
-        <div className={`${styles.centerMsg} ${lineIdx === 0 ? styles.centerMsgVisible : ''}`}>
-          {lineA}
-        </div>
-        {lineB ? (
-          <div className={`${styles.centerMsg} ${lineIdx === 1 ? styles.centerMsgVisible : ''}`}>
-            {lineB}
+        {showCountdown ? (
+          <div className={`${styles.timerTop} ${breathGlow ? styles.timerTopActive : styles.timerTopInactive} ${promptBlink ? styles.timerTopBlink : ''}`} style={{ opacity: promptOpacity, whiteSpace: 'pre-line' }}>
+            {`${promptLabel}\n${showSeconds && countdown ? `${countdown}초` : ''}`}
           </div>
         ) : null}
+        {isPausing ? (
+          <div className={`${styles.centerMsg} ${styles.centerMsgVisible}`}>멈춤</div>
+        ) : (
+          <>
+            <div className={`${styles.centerMsg} ${lineIdx === 0 ? styles.centerMsgVisible : ''}`}>
+              {lineA}
+            </div>
+            {lineB ? (
+              <div className={`${styles.centerMsg} ${lineIdx === 1 ? styles.centerMsgVisible : ''}`}>
+                {lineB}
+              </div>
+            ) : null}
+          </>
+        )}
       </div>
-      <DebugNav onPrev={prev} onNext={next} />
+      {/* Debug: next-only button */}
+      <button
+        type="button"
+        className={`${styles.toggleBtn} ${styles.debugNext} ${styles.debugBtn}`}
+        onClick={next}
+        aria-label="다음"
+      >
+        →
+      </button>
     </>
   );
 }

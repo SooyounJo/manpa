@@ -430,11 +430,11 @@
 }
 
 .hintMsg {
-  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  font-family: 'JSari', 'Arirang', 'Noto Sans KR', system-ui, sans-serif !important;
 }
 
 .guideMsg {
-  font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  font-family: 'JSari', 'Arirang', 'Noto Sans KR', system-ui, sans-serif !important;
 }
 
 .debugNav {
