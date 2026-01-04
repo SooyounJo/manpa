@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import styles from '../styles/Index.module.css';
 import Background from '../components/Background';
 import GlassModal from '../components/GlassModal';
-import ModePicker from '../components/ModePicker';
+import BreathEngine from '../components/BreathEngine';
+import FinalOverlay from './FinalOverlay';
+import { useAudio } from '../hooks/useAudio';
 
 export default function LandingExperience() {
   const [visibleIds, setVisibleIds] = useState(() => new Set());
@@ -21,14 +23,39 @@ export default function LandingExperience() {
   const postTimersRef = useRef([]);
   const [typoFade, setTypoFade] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const [mode478, setMode478] = useState(false);
+  const [mode478, setMode478] = useState(true);
   const [mode446, setMode446] = useState(false);
   const [modeHalf, setModeHalf] = useState(false);
-  const [showModePicker, setShowModePicker] = useState(false);
+  // single flow (meditation). Mode picker removed.
   const [showTopCapsule, setShowTopCapsule] = useState(false);
+  const [stageColor, setStageColor] = useState('#000');
+  const [showEngine, setShowEngine] = useState(false);
+  const [finalTransition, setFinalTransition] = useState(false);
+  const [showFinal, setShowFinal] = useState(false);
+  const [finalHold, setFinalHold] = useState(false);
+  const topCapsuleRef = useRef(null);
+  const [capsuleHeight, setCapsuleHeight] = useState(0);
+  const { playLoop, stopLoop, resumeLoop } = useAudio();
+  const bgmStartedRef = useRef(false);
+
+  const [showHeadphoneHint, setShowHeadphoneHint] = useState(true);
+  const [introReady, setIntroReady] = useState(false);
+  const [showBreathGuide, setShowBreathGuide] = useState(false);
+
+  // Headphone hint then start intro
+  useEffect(() => {
+    setStageColor('#000');
+    const t = setTimeout(() => {
+      setShowHeadphoneHint(false);
+      setIntroReady(true);
+      resumeLoop();
+    }, 4000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
-    const STEP_MS = 2000; // faster landing reveal
+    if (!introReady) return;
+    const stepIntervals = [1400, 1100, 900, 800]; // faster reveal cadence
     const steps = [
       ['1-1', '1-2', '1-3', '1-4', '1-5'],
       ['2-1', '2-2', '2-3', '2-4'],
@@ -36,10 +63,15 @@ export default function LandingExperience() {
       ['4-1', '4-2', '4-3', '4-4'],
     ];
     const add = (ids) => setVisibleIds((prev) => new Set([...prev, ...ids]));
-    timersRef.current = steps.map((ids, idx) => setTimeout(() => add(ids), idx * STEP_MS));
+    let acc = 0;
+    steps.forEach((ids, idx) => {
+      const delay = stepIntervals[Math.min(idx, stepIntervals.length - 1)];
+      timersRef.current.push(setTimeout(() => add(ids), acc));
+      acc += delay;
+    });
 
-    const ENTRANCE_MS = 1200;
-    const lastStepDelay = (steps.length - 1) * STEP_MS;
+    const ENTRANCE_MS = 800;
+    const lastStepDelay = (stepIntervals[0] + stepIntervals[1] + stepIntervals[2] + stepIntervals[3]) - stepIntervals[0];
     const brandDelay = lastStepDelay + ENTRANCE_MS + 1000;
     const brandTimer = setTimeout(() => {
       setBrandVisible(true);
@@ -48,6 +80,7 @@ export default function LandingExperience() {
       const EXTRA_DELAY = 1200; // slower Hangul appearance
       const taglineTimer = setTimeout(() => setTaglineVisible(true), CHAR_COUNT * STAGGER_MS + EXTRA_DELAY);
       setCanRequestMic(true);
+      resumeLoop();
       postTimersRef.current.push(taglineTimer);
     }, brandDelay);
     return () => {
@@ -55,7 +88,40 @@ export default function LandingExperience() {
       timersRef.current = [];
       clearTimeout(brandTimer);
     };
-  }, []);
+  }, [introReady]);
+  // Recompute capsule height once engine is shown and on resize
+  useEffect(() => {
+    if (!showEngine) return;
+    const measure = () => {
+      if (topCapsuleRef.current) {
+        setCapsuleHeight(topCapsuleRef.current.offsetHeight || 0);
+      }
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    const t = setTimeout(measure, 0);
+    return () => {
+      window.removeEventListener('resize', measure);
+      clearTimeout(t);
+    };
+  }, [showEngine]);
+
+  // BGM: start from story engine; keep looping; ignore triggers
+  useEffect(() => {
+    if (showEngine && !bgmStartedRef.current) {
+      const bgmPath = encodeURI('/music/bgm (1).mp3');
+      playLoop(bgmPath, { volume: 0.6 });
+      bgmStartedRef.current = true;
+    }
+  }, [showEngine, playLoop]);
+
+  // Auto-open mic modal 2s after tagline appears if user didn't start
+  useEffect(() => {
+    if (taglineVisible && !micRequested && !showMicModal) {
+      const t = setTimeout(() => setShowMicModal(true), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [taglineVisible, micRequested, showMicModal]);
 
   const requestMic = async () => {
     if (micRequested) return;
@@ -75,8 +141,26 @@ export default function LandingExperience() {
 
   return (
     <>
-      <Background visibleIds={visibleIds} exiting={transitionOut} reenterGroups={reenterGroups} exitGroups={exitGroups} />
+      <Background
+        visibleIds={visibleIds}
+        exiting={transitionOut}
+        reenterGroups={reenterGroups}
+        exitGroups={exitGroups}
+        stageColor={stageColor}
+        isIntro={!showEngine}
+        dimOverlay={((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000')) ? (showFinal ? 0.75 : 0.65) : 0}
+      />
       <main className={styles.main}>
+        {/* sync mini logo height with capsule height */}
+        {showEngine ? null : null}
+        {showHeadphoneHint ? (
+          <div className={styles.centerText}>
+            <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
+            <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.hintMsg}`}>
+              이어폰 사용을 통해<br/>더 깊이있는 체험이 가능합니다
+            </div>
+          </div>
+        ) : null}
         {canRequestMic && !micRequested && !showMicModal ? (
           <button
             type="button"
@@ -87,115 +171,101 @@ export default function LandingExperience() {
         ) : null}
         <GlassModal
           open={showMicModal}
-          title="마이크 권한 요청"
-          body={<><div>체험을 진행하기 위해</div><div>마이크 접근을 허용해주세요.</div></>}
-          secondaryLabel="닫기"
+          title={<><span>‘만파식적’이(가) 마이크에</span><br /><span style={{ display: 'inline-block', textIndent: '0', paddingLeft: '0.6em' }}>접근하려고 합니다.</span></>}
+          body={<><div>마이크 사용을 허가해주세요.</div></>}
+          secondaryLabel="허용 안 함"
           onSecondary={() => setShowMicModal(false)}
-          primaryLabel="허용"
+          primaryLabel="확인"
           plain
           onPrimary={async () => {
             await requestMic();
             setShowMicModal(false);
             setTypoFade(true);
-            postTimersRef.current.push(setTimeout(() => setShowModePicker(true), 2000));
+             resumeLoop(); // safeguard against mic permission side-effect
+            // begin meditation flow automatically after 2s
+            postTimersRef.current.push(setTimeout(() => {
+               // Show 4s breath guide on dark screen, then start engine
+               setStageColor('#000');
+               setShowBreathGuide(true);
+               setBrandVisible(false);
+               setTaglineVisible(false);
+               const g = setTimeout(() => {
+                 setShowBreathGuide(false);
+                 setShowEngine(true);
+                 setStageColor('#DBE7EA'); // start story on bright background
+                 setShowTopCapsule(true); // ensure capsules are shown from the first narrative message
+               }, 4000);
+               postTimersRef.current.push(g);
+            }, 2000));
           }}
         />
-        <ModePicker
-          open={showModePicker}
-          onPick={() => {
-            setShowModePicker(false);
-            const t0 = 0;
-            // 1) Background exits (sequential 4->3->2). Finish around t=1800ms
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4])), t0 + 0));
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3])), t0 + 900));
-            postTimersRef.current.push(setTimeout(() => setExitGroups(new Set([4, 3, 2])), t0 + 1800));
-
-            // 2) After background gone, wait 2s, then show prelude message 1
-            const preludeStart = t0 + 1800 + 200 + 2000; // exit end + buffer + 2s
-            setPhase('prelude');
-            postTimersRef.current.push(setTimeout(() => {
-              setMessageIndex(0);
-              setShowTopCapsule(true); // show top capsule with first message
-            }, preludeStart));
-
-            // 3) Messages change every 5s; on change trigger group re-entries
-            // At msg1 -> msg2: re-enter group 2
-            postTimersRef.current.push(setTimeout(() => {
-              setMessageIndex(1);
-              setReenterGroups(new Set([2]));
-            }, preludeStart + 5000));
-            // At msg2 -> msg3: re-enter group 3
-            postTimersRef.current.push(setTimeout(() => {
-              setMessageIndex(2);
-              setReenterGroups(new Set([2, 3]));
-            }, preludeStart + 10000));
-            // At msg3 -> msg4: re-enter group 4
-            postTimersRef.current.push(setTimeout(() => {
-              setMessageIndex(3);
-              setReenterGroups(new Set([2, 3, 4]));
-            }, preludeStart + 15000));
-
-            // 4) After prelude (4 msgs), switch to closing two-step narrative
-            postTimersRef.current.push(setTimeout(() => {
-              setPhase('closing');
-              setMessageIndex(0);
-            }, preludeStart + 20000));
-            postTimersRef.current.push(setTimeout(() => setMessageIndex(1), preludeStart + 25000));
-
-            // 5) Reveal controls slightly after closing
-            postTimersRef.current.push(setTimeout(() => setShowControls(true), preludeStart + 28000));
-          }}
-        />
-        <div className={styles.centerText} aria-live="polite" style={{ display: messageIndex >= 0 ? 'grid' : 'none' }}>
-          <div className={`${styles.centerDim} ${messageIndex >= 0 ? styles.centerDimVisible : ''}`} />
-          {phase === 'prelude' ? (
-            <>
-              <div className={`${styles.centerMsg} ${messageIndex === 0 ? styles.centerMsgVisible : ''}`}>
-                오늘 몇 번의 파도가<br/><br/>당신의 마음 속에 일었나요?
-              </div>
-              <div className={`${styles.centerMsg} ${messageIndex === 1 ? styles.centerMsgVisible : ''}`}>
-                아주 작은 흔들림부터,<br/><br/>조금 더 크게<br/>밀려온 파도들까지
-              </div>
-              <div className={`${styles.centerMsg} ${messageIndex === 2 ? styles.centerMsgVisible : ''}`}>
-                지금은 그것들을<br/><br/>억지로 멀리 보내지<br/>않아도 됩니다
-              </div>
-              <div className={`${styles.centerMsg} ${messageIndex === 3 ? styles.centerMsgVisible : ''}`}>
-                그저 천천히,<br/><br/>하나씩<br/>떠올려봅니다
-              </div>
-            </>
-          ) : null}
-          {phase === 'closing' ? (
-            <>
-              <div className={`${styles.centerMsg} ${messageIndex === 0 ? styles.centerMsgVisible : ''}`}>
-                오늘 당신은<br/><br/>파도를 잠재웠습니다.
-                <div style={{ fontSize: 36, marginTop: 12 }}>🎤</div>
-                <div style={{ fontSize: 12, opacity: 0.85, marginTop: 12 }}>마이크에 대고 말해보세요.</div>
-              </div>
-              <div className={`${styles.centerMsg} ${messageIndex === 1 ? styles.centerMsgVisible : ''}`}>
-                한 번 더 잠재우고 싶다면,<br/><br/>언제든 다시 숨을 들이쉬고,<br/>내쉬어 보세요.
-                <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 16 }}>
-                  <button className={styles.toggleBtn}>한 번 더</button>
-                  <button className={styles.toggleBtn}>마침</button>
-                </div>
-              </div>
-            </>
-          ) : null}
-        </div>
-        {(showTopCapsule || showControls) ? (
+         {showBreathGuide ? (
+           <div className={styles.centerText}>
+             <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
+             <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
+               크게 4초 정도 숨을 입으로<br/>들이쉬고 내뱉어주세요
+             </div>
+           </div>
+         ) : null}
+        {showEngine ? (
+          <div className={`${styles.fadeIn} ${styles.fadeInVisible}`}>
+            <BreathEngine
+              onBgColor={setStageColor}
+              onFirstBeat={() => setShowTopCapsule(true)}
+              onFinal={() => {
+                // Dark waves-only for 3s, then to mic input overlay
+                setStageColor('#000');
+                setFinalHold(true);
+                setShowEngine(false);
+                setTimeout(() => {
+                  setShowFinal(true);
+                  setFinalHold(false);
+                }, 3000);
+              }}
+            />
+          </div>
+        ) : null}
+        {showEngine ? (
           <>
-            <div className={styles.capsuleTop}>
+            <img src="/img/manpa.png" alt="manpa" className={styles.miniLogo} style={capsuleHeight ? { height: `${capsuleHeight}px` } : undefined} />
+            <div ref={topCapsuleRef} className={`${styles.capsuleTop} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
               <div className={styles.capsuleDate}>
                 {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
               </div>
               <div className={styles.capsuleSub}>1번째 호흡</div>
             </div>
-            <div className={styles.bottomToggles}>
-              <button className={`${styles.toggleBtn} ${mode478 ? styles.toggleActive : ''}`} onClick={() => setMode478((v)=>!v)}>4-7-8</button>
+            <div className={`${styles.bottomToggles} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
+              <button className={`${styles.toggleBtn} ${styles.toggleBtn478} ${mode478 ? styles.toggleActive478 : ''}`} onClick={() => setMode478((v)=>!v)}>4-7-8</button>
               <button className={`${styles.toggleBtn} ${mode446 ? styles.toggleActive : ''}`} onClick={() => setMode446((v)=>!v)}>4-4-6</button>
               <button className={`${styles.toggleBtn} ${modeHalf ? styles.toggleActive : ''}`} onClick={() => setModeHalf((v)=>!v)}>1:2</button>
             </div>
           </>
         ) : null}
+        {(showFinal) ? (
+          <div className={`${styles.capsuleTop} ${styles.fadeIn} ${styles.fadeInVisible}`}>
+            <div className={styles.capsuleDate}>
+              {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
+            </div>
+            <div className={styles.capsuleSub}>1번째 호흡</div>
+          </div>
+        ) : null}
+        {showFinal ? (
+          <FinalOverlay
+            onRestart={() => {
+              setShowFinal(false);
+              setStageColor('#DBE7EA');
+              setShowEngine(true);
+              setShowTopCapsule(true);
+            }}
+            onClose={() => {
+              // go back to the initial landing page
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              }
+            }}
+          />
+        ) : null}
+        {!showEngine ? (
         <div className={`${styles.brand} ${brandVisible ? styles.brandVisible : ''} ${typoFade ? styles.brandFadeOut : ''}`}>
           {'萬波息笛'.split('').map((ch, i) => (
             <span key={i} className={styles.brandChar} style={{ ['--i']: i }} aria-hidden>
@@ -203,10 +273,13 @@ export default function LandingExperience() {
             </span>
           ))}
         </div>
+        ) : null}
+        {!showEngine ? (
         <div className={`${styles.tagline} ${taglineVisible ? styles.taglineVisible : ''} ${typoFade ? styles.taglineFadeOut : ''}`}>
           <div className={styles.taglineCol}>마음의 파동</div>
           <div className={styles.taglineCol}>흐홉으로 잠재우는,</div>
         </div>
+        ) : null}
       </main>
     </>
   );

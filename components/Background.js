@@ -24,7 +24,7 @@ const waves = [
   { id: '4-4', group: 4, src: '/wave/4-4.png' },
 ];
 
-function Background({ visibleIds, exiting, reenterGroups, exitGroups }) {
+function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0 }) {
   const computeZIndex = (group, id) => {
     // Ensure group 1 > 2 > 3 > 4
     const baseByGroup = { 1: 400, 2: 300, 3: 200, 4: 100 };
@@ -58,6 +58,22 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups }) {
     return { x: 0, y: 0 };
   };
 
+  const computeAmplitude = (group, id) => {
+    const suffix = parseInt(id.split('-')[1], 10) || 0;
+    if (group === 1) {
+      // Keep top layer almost stationary to avoid edge gaps
+      const ax = 1; // very subtle horizontal drift
+      const ay = 2; // subtle vertical drift
+      return { ax, ay };
+    }
+    // Mild variance for deeper layers
+    const seedX = (group * 101 + suffix * 13) % 5; // 0..4
+    const seedY = (group * 103 + suffix * 17) % 5; // 0..4
+    const ax = 6 + seedX; // 6..10px
+    const ay = 4 + seedY; // 4..8px
+    return { ax, ay };
+  };
+
   const computeEnterOffset = (id) => {
     const dx = 8; // vw
     const dy = 8; // vh
@@ -87,12 +103,13 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups }) {
   };
 
   return (
-    <div className={styles.stage} aria-hidden>
+    <div className={styles.stage} aria-hidden style={{ ['--stageColor']: stageColor }}>
       {waves.map((wave) => {
         const isVisible = visibleIds?.has(wave.id);
         const { durationMs, delayMs } = computeFloat(wave.group, wave.id);
         const reenter = reenterGroups?.has?.(wave.group);
         const enter = computeEnterOffset(wave.id);
+        const { ax, ay } = computeAmplitude(wave.group, wave.id);
         const invert = (v) => (v === '0' ? '0' : (v.startsWith('-') ? v.slice(1) : `-${v}`));
         const exitXStr = invert(enter.x);
         const exitYStr = invert(enter.y);
@@ -116,12 +133,15 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups }) {
               ['--exitY']: exitYStr,
               ['--enterX']: enter.x,
               ['--enterY']: enter.y,
+              ['--ampX']: `${ax}px`,
+              ['--ampY']: `${ay}px`,
             }}
             decoding="async"
             loading="eager"
           />
         );
       })}
+      <div className={styles.dim} style={{ ['--dimOpacity']: dimOverlay }} />
     </div>
   );
 }

@@ -19,18 +19,30 @@ export default function GlassModal({
       <div className={modalClass} role="document">
         {title ? <div className={styles.header}>{title}</div> : null}
         {body ? <div className={styles.body}>{body}</div> : null}
-        <div className={styles.actions}>
-          {secondaryLabel ? (
-            <button type="button" className={styles.btnSecondary} onClick={onSecondary}>
+        {plain && primaryLabel && secondaryLabel ? (
+          <div className={styles.actionsSegmented} role="group" aria-label="모달 작업">
+            <button type="button" className={`${styles.actionSeg} ${styles.actionLeft}`} onClick={onSecondary}>
               {secondaryLabel}
             </button>
-          ) : null}
-          {primaryLabel ? (
-            <button type="button" className={styles.btnPrimary} onClick={onPrimary}>
+            <span className={styles.actionDivider} aria-hidden />
+            <button type="button" className={`${styles.actionSeg} ${styles.actionRight}`} onClick={onPrimary}>
               {primaryLabel}
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : (
+          <div className={styles.actions}>
+            {secondaryLabel ? (
+              <button type="button" className={styles.btnSecondary} onClick={onSecondary}>
+                {secondaryLabel}
+              </button>
+            ) : null}
+            {primaryLabel ? (
+              <button type="button" className={styles.btnPrimary} onClick={onPrimary}>
+                {primaryLabel}
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );

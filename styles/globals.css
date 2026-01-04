@@ -52,6 +52,17 @@ body.theme-dark {
 
 /* Arirang typeface for Korean tagline */
 @font-face {
+  font-family: 'JSari';
+  src:
+    local('JSari'),
+    url('/type/jsari.otf') format('opentype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* Arirang typeface for Korean tagline */
+@font-face {
   font-family: 'Arirang';
   src:
     local('Arirang'),
