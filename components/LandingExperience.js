@@ -274,7 +274,7 @@ export default function LandingExperience() {
            <div className={styles.centerText}>
              <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
              <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
-              4초간 들이쉬고, 잠시 멈춘 뒤<br/>8초 동안 '입으로' 내쉬어 보세요
+              4초간 들이쉬고, 잠시 멈춘 뒤<br/>8초 동안 &apos;입으로&apos; 내쉬어 보세요
              </div>
            </div>
          ) : null}
@@ -354,6 +354,12 @@ export default function LandingExperience() {
               }
             }}
           />
+        ) : null}
+        {/* Waves-only pre-final hold: show a small hint text */}
+        {finalHold ? (
+          <div className={styles.centerText} aria-hidden>
+            <div className={`${styles.finalHint} ${styles.finalHintVisible}`}>곧 마무리 단계</div>
+          </div>
         ) : null}
         {!showEngine ? (
         <div className={`${styles.brand} ${brandVisible ? styles.brandVisible : ''} ${typoFade ? styles.brandFadeOut : ''}`}>
