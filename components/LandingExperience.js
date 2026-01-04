@@ -5,6 +5,7 @@ import Background from '../components/Background';
 import GlassModal from '../components/GlassModal';
 import BreathEngine from '../components/BreathEngine';
 import FinalOverlay from './FinalOverlay';
+import OpenInChromePrompt from './OpenInChromePrompt';
 import { useAudio } from '../hooks/useAudio';
 
 export default function LandingExperience() {
@@ -151,6 +152,7 @@ export default function LandingExperience() {
         dimOverlay={((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000')) ? (showFinal ? 0.75 : 0.65) : 0}
       />
       <main className={styles.main}>
+        <OpenInChromePrompt />
         {/* sync mini logo height with capsule height */}
         {showEngine ? null : null}
         {showHeadphoneHint ? (
@@ -203,7 +205,7 @@ export default function LandingExperience() {
            <div className={styles.centerText}>
              <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
              <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
-               크게 4초 정도 숨을 입으로<br/>들이쉬고 내뱉어주세요
+              4초간 들이쉬고, 잠시 멈춘 뒤<br/>8초 동안 내쉬어 보세요
              </div>
            </div>
          ) : null}

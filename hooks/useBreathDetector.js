@@ -2,14 +2,16 @@ import { useEffect, useRef } from 'react';
 
 // Simple breath detector based on RMS energy with hysteresis and throttle.
 export function useBreathDetector(onBreath, opts = {}) {
-  const thresholdDelta = typeof opts.thresholdDelta === 'number' ? opts.thresholdDelta : 0.05;
-  const cooldownMs = typeof opts.cooldownMs === 'number' ? opts.cooldownMs : 1200;
+  const thresholdDelta = typeof opts.thresholdDelta === 'number' ? opts.thresholdDelta : 0.18; // stricter by default
+  const absMinRms = typeof opts.absMinRms === 'number' ? opts.absMinRms : 0.06; // absolute floor to reject noise
+  const cooldownMs = typeof opts.cooldownMs === 'number' ? opts.cooldownMs : 1800;
   const ctxRef = useRef(null);
   const srcRef = useRef(null);
   const anaRef = useRef(null);
   const rafRef = useRef(null);
   const lastTriggerRef = useRef(0);
   const baselineRef = useRef(0.01);
+  const overFramesRef = useRef(0);
 
   useEffect(() => {
     let stream;
@@ -31,7 +33,7 @@ export function useBreathDetector(onBreath, opts = {}) {
         srcRef.current = src;
         const ana = ctx.createAnalyser();
         ana.fftSize = 1024;
-        ana.smoothingTimeConstant = 0.6;
+        ana.smoothingTimeConstant = 0.7;
         src.connect(ana);
         anaRef.current = ana;
 
@@ -49,8 +51,15 @@ export function useBreathDetector(onBreath, opts = {}) {
           baselineRef.current = baselineRef.current * 0.995 + rms * 0.005;
           const threshold = baselineRef.current + thresholdDelta; // adjustable sensitivity
           const now = performance.now();
-          if (rms > threshold && now - lastTriggerRef.current > cooldownMs) {
+          if (rms > threshold && rms > absMinRms) {
+            overFramesRef.current += 1;
+          } else {
+            overFramesRef.current = 0;
+          }
+          // require ~200ms over-threshold to trigger (assuming ~60fps)
+          if (overFramesRef.current >= 12 && now - lastTriggerRef.current > cooldownMs) {
             lastTriggerRef.current = now;
+            overFramesRef.current = 0;
             onBreath?.();
           }
           rafRef.current = requestAnimationFrame(loop);
