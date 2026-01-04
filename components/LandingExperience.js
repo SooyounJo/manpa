@@ -11,6 +11,13 @@ import { useAudio } from '../hooks/useAudio';
 export default function LandingExperience() {
   const [visibleIds, setVisibleIds] = useState(() => new Set());
   const timersRef = useRef([]);
+  // Wave group helpers for story sequencing
+  const GROUPS = useRef({
+    1: ['1-1', '1-2', '1-3', '1-4', '1-5'],
+    2: ['2-1', '2-2', '2-3', '2-4'],
+    3: ['3-1', '3-2', '3-3'],
+    4: ['4-1', '4-2', '4-3', '4-4'],
+  });
   const [brandVisible, setBrandVisible] = useState(false);
   const [taglineVisible, setTaglineVisible] = useState(false);
   const [canRequestMic, setCanRequestMic] = useState(false);
@@ -40,6 +47,8 @@ export default function LandingExperience() {
   const bgmStartedRef = useRef(false);
   const [ampScale, setAmpScale] = useState(1);
   const [breathCount, setBreathCount] = useState(0);
+  // track last directive to avoid redundant state churn
+  const lastWaveKeyRef = useRef('');
   const incrementBreathCount = () => {
     if (typeof window === 'undefined') return;
     try {
@@ -158,6 +167,38 @@ export default function LandingExperience() {
   };
 
   // Not used for landing anymore; messages are driven by mode selection
+  // Wave directive handler (from BreathEngine)
+  const applyWaveDirective = (directive) => {
+    if (!directive) return;
+    // Build visible id set from requested groups
+    if (directive.type === 'show' && Array.isArray(directive.groups)) {
+      const key = `show:${directive.groups.sort().join(',')}|re:${(directive.reenter || []).sort().join(',')}`;
+      if (lastWaveKeyRef.current === key) return;
+      lastWaveKeyRef.current = key;
+      const ids = [];
+      directive.groups.forEach((g) => ids.push(...(GROUPS.current[g] || [])));
+      setVisibleIds(new Set(ids));
+      setReenterGroups(new Set(directive.reenter || []));
+      setExitGroups(new Set());
+      return;
+    }
+    if (directive.type === 'flashHide' && Array.isArray(directive.hideGroups)) {
+      // briefly fade-out specified groups (simple exit effect)
+      setExitGroups(new Set(directive.hideGroups));
+      // actually hide after a short delay to keep DOM light
+      setTimeout(() => {
+        setVisibleIds((prev) => {
+          const toHide = new Set();
+          directive.hideGroups.forEach((g) => (GROUPS.current[g] || []).forEach((id) => toHide.add(id)));
+          const next = new Set();
+          prev.forEach((id) => { if (!toHide.has(id)) next.add(id); });
+          return next;
+        });
+        setExitGroups(new Set());
+      }, typeof directive.ms === 'number' ? Math.max(0, directive.ms) : 600);
+      return;
+    }
+  };
 
   return (
     <>
@@ -250,6 +291,7 @@ export default function LandingExperience() {
             <BreathEngine
               onBgColor={setStageColor}
               onFirstBeat={() => setShowTopCapsule(true)}
+              onWaveDirective={applyWaveDirective}
               onSectionChange={(chapter) => {
                 // Intensify waves on chapter 8, normal elsewhere
                 if (String(chapter) === '8') {

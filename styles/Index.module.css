@@ -413,9 +413,11 @@
   max-width: 90vw;
   color: #ffffff;
   white-space: pre-line; /* respect \\n in narrative text */
+  /* Stronger directional drop-shadow for readability over waves */
   text-shadow:
-    0 4px 12px rgba(96, 125, 182, 0.50),
-    0 12px 38px rgba(96, 125, 182, 0.32);
+    0 6px 16px rgba(20, 24, 40, 0.68),
+    0 14px 36px rgba(20, 24, 40, 0.50),
+    0 22px 54px rgba(20, 24, 40, 0.35);
   font-family: 'JSari', 'Arirang', 'MyOTF', 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif !important;
   font-weight: 400;
   font-synthesis: none; /* prevent fake bold */

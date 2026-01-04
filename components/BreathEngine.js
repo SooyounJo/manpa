@@ -8,6 +8,7 @@ export default function BreathEngine({
   onBgColor,
   onFirstBeat,
   onFinal,
+  onWaveDirective,
   onSectionChange,
   stageColorDefault = '#DBE7EA',
 }) {
@@ -94,6 +95,72 @@ export default function BreathEngine({
     if ((b.lines?.length || 0) > 1) {
       timers.current.push(setTimeout(() => setLineIdx(1), b.lineMs || 3000));
     }
+    // initial wave directive per beat at first line
+    try {
+      if (b?.id) {
+        // 1-x: progressively add 2,3,4
+        if (/^1-/.test(b.id)) {
+          const suf = parseInt(String(b.id).split('-')[1] || '1', 10);
+          const groups = suf <= 1 ? [1] : suf === 2 ? [1,2] : suf === 3 ? [1,2,3] : [1,2,3,4];
+          const reenter = suf > 1 ? [suf] : [];
+          onWaveDirective?.({ type: 'show', groups, reenter });
+        }
+        // 2-1 exhale: line0 only 1, line1 add 2; 2-3 inhale: add 3
+        if (b.id === '2-1') {
+          onWaveDirective?.({ type: 'show', groups: [1] });
+        }
+        if (b.id === '2-3') {
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+        }
+        // 3-1 exhale: start with 1+2; 3-4 inhale: add 4
+        if (b.id === '3-1') {
+          onWaveDirective?.({ type: 'show', groups: [1,2] });
+        }
+        if (b.id === '3-4') {
+          onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+        }
+        // 4-1, 4-2, 4-3 (two lines)
+        if (b.id === '4-1') {
+          onWaveDirective?.({ type: 'show', groups: [1] });
+        }
+        if (b.id === '4-2') {
+          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+        }
+        if (b.id === '4-3') {
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+        }
+        // 5-1, 5-2, 5-3 (two lines)
+        if (b.id === '5-1') {
+          onWaveDirective?.({ type: 'show', groups: [1] });
+        }
+        if (b.id === '5-2') {
+          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+        }
+        if (b.id === '5-3') {
+          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+        }
+        // Pauses: schedule last-2s reveals per spec
+        if (b.trigger === 'pause') {
+          const totalMsPause = Math.max(b.interludeMs || 7000, 7000);
+          if (b.id === 'i-1') {
+            // all moving, last 2s only 1-x
+            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
+            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
+          } else if (b.id === 'i-2') {
+            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
+            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
+          } else if (b.id === 'i-3') {
+            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
+            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
+          } else if (b.id === 'i-5') {
+            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
+            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
+          } else {
+            // default: keep current state
+          }
+        }
+      }
+    } catch {}
     // show capsule in waiting state (exhale waits for trigger, inhale auto-runs)
     setShowCountdown(true);
     setPromptLabel(b.trigger === 'exhale' ? '숨을 불어넣기' : (b.trigger === 'pause' ? '멈춤' : '숨을 들이쉬기'));
@@ -157,6 +224,31 @@ export default function BreathEngine({
       }, totalMs);
     }
   }, [beats, onBgColor, playOnce, stop, stageColorDefault]);
+
+  // Wave directives that depend on in-beat line changes
+  useEffect(() => {
+    const b = beats[idx];
+    if (!b || !b.id) return;
+    try {
+      // 2-1 exhale: line 1 → add group 2
+      if (b.id === '2-1' && lineIdx === 1) {
+        onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2] });
+      }
+      // 3-1 exhale: line 1 → add group 3
+      if (b.id === '3-1' && lineIdx === 1) {
+        onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3] });
+      }
+      // 4-3 exhale: line 1 → add group 4
+      if (b.id === '4-3' && lineIdx === 1) {
+        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+      }
+      // 5-3 exhale: line 1 → add group 4 and keep all afterwards
+      if (b.id === '5-3' && lineIdx === 1) {
+        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4] });
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineIdx, idx]);
 
   // init: auto-start on first inhale beat
   useEffect(() => {
