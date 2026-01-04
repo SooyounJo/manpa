@@ -22,6 +22,7 @@ const waves = [
   { id: '4-2', group: 4, src: '/wave/4-2.png' },
   { id: '4-3', group: 4, src: '/wave/4-3.png' },
   { id: '4-4', group: 4, src: '/wave/4-4.png' },
+  { id: '4-5', group: 4, src: '/wave/4-5.png' },
 ];
 
 function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1, softReenterGroups }) {
@@ -104,6 +105,7 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
       case '4-2': return { x: `0`,        y: `${dy}vh` };  // bottom → top
       case '4-3': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left → bottom-right
       case '4-4': return { x: `${dx}vw`,  y: `0` };        // right → left
+      case '4-5': return { x: `${dx}vw`,  y: `${dy}vh` };  // bottom-right → top-left
       default:    return { x: `0`,        y: `40px` };
     }
   };

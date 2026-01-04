@@ -580,6 +580,18 @@
   -webkit-backdrop-filter: blur(10px);
   color: #ffffff;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  isolation: isolate; /* allow inner pseudo-element layering */
+}
+.lightTheme .capsuleTop::after {
+  content: "";
+  position: absolute;
+  inset: -10px -14px;
+  border-radius: 999px;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,0.18), rgba(0,0,0,0) 70%);
+  filter: blur(6px);
+  z-index: -1; /* behind the pill */
 }
 .capsuleDate {
   font-size: 11px;
@@ -598,6 +610,20 @@
   z-index: 1700;
   display: flex;
   gap: 12px;
+}
+.lightTheme .bottomToggles::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 36px;
+  border-radius: 999px;
+  background: radial-gradient(60% 60% at 50% 50%, rgba(0,0,0,0.18), rgba(0,0,0,0) 70%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: -1;
 }
 .toggleBtn {
   appearance: none;

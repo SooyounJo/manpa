@@ -16,7 +16,7 @@ export default function LandingExperience() {
     1: ['1-1', '1-2', '1-3', '1-4', '1-5'],
     2: ['2-1', '2-2', '2-3', '2-4'],
     3: ['3-1', '3-2', '3-3'],
-    4: ['4-1', '4-2', '4-3', '4-4'],
+    4: ['4-1', '4-2', '4-3', '4-4', '4-5'],
   });
   const [brandVisible, setBrandVisible] = useState(false);
   const [taglineVisible, setTaglineVisible] = useState(false);
@@ -51,6 +51,8 @@ export default function LandingExperience() {
   const lastWaveKeyRef = useRef('');
   // soft re-entry groups (opacity-only)
   const [softReenterGroups, setSoftReenterGroups] = useState(() => new Set());
+  // Early audio permission modal
+  const [showAudioModal, setShowAudioModal] = useState(true);
   const incrementBreathCount = () => {
     if (typeof window === 'undefined') return;
     try {
@@ -91,7 +93,7 @@ export default function LandingExperience() {
       ['1-1', '1-2', '1-3', '1-4', '1-5'],
       ['2-1', '2-2', '2-3', '2-4'],
       ['3-1', '3-2', '3-3'],
-      ['4-1', '4-2', '4-3', '4-4'],
+      ['4-1', '4-2', '4-3', '4-4', '4-5'],
     ];
     const add = (ids) => setVisibleIds((prev) => new Set([...prev, ...ids]));
     let acc = 0;
@@ -232,6 +234,23 @@ export default function LandingExperience() {
             aria-label="화면 탭하여 마이크 권한 요청"
           />
         ) : null}
+        {/* Early audio permission modal to enable BGM at app start */}
+        <GlassModal
+          open={showAudioModal}
+          title={<>배경 음악 재생을 허용할까요?</>}
+          body={<>원활한 체험을 위해 음악을 미리 재생합니다.</>}
+          primaryLabel="확인"
+          plain
+          onPrimary={() => {
+            if (!bgmStartedRef.current) {
+              const bgmPath = encodeURI('/music/bgm (1).mp3');
+              playLoop(bgmPath, { volume: 0.6 });
+              bgmStartedRef.current = true;
+            }
+            setShowAudioModal(false);
+            resumeLoop();
+          }}
+        />
         <GlassModal
           open={showMicModal}
           title={<><span>‘만파식적’이(가) 마이크에</span><br /><span style={{ display: 'inline-block', textIndent: '0', paddingLeft: '0.6em' }}>접근하려고 합니다.</span></>}
