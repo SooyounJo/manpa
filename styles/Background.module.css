@@ -58,6 +58,12 @@
     enter var(--enterDur) cubic-bezier(.16,.84,.44,1) forwards,
     floatXY var(--floatDur) ease-in-out calc(var(--enterDur) + var(--floatDelay)) infinite alternate;
 }
+.story .visible {
+  /* In story: slow translate-only entrance, no fade */
+  animation:
+    enterTranslate var(--storyEnterDur, var(--enterDur)) cubic-bezier(.20,.90,.30,1.02) var(--enterDelay, 0ms) forwards,
+    floatXY var(--floatDur) ease-in-out calc(var(--storyEnterDur, var(--enterDur)) + var(--enterDelay, 0ms) + var(--floatDelay)) infinite alternate;
+}
 
 .exit {
   animation: exitFade 700ms ease-in forwards;
@@ -72,6 +78,12 @@
   animation:
     reenterFade 700ms ease-out forwards,
     floatXY var(--floatDur) ease-in-out 700ms infinite alternate;
+}
+.story .reenterSoft {
+  /* in story: also translate-only, no fade */
+  animation:
+    reenterTranslate var(--reDur, 700ms) cubic-bezier(.16,.84,.44,1) var(--reDelay, 0ms) forwards,
+    floatXY var(--floatDur) ease-in-out calc(var(--reDelay, 0ms) + var(--reDur, 700ms)) infinite alternate;
 }
 .layer1 { z-index: 40; }
 .layer2 { z-index: 30; }

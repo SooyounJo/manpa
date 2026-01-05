@@ -7,6 +7,7 @@ export default function FinalOverlay({ onRestart, onClose }) {
   const [listening, setListening] = useState(false);
   const [prelude, setPrelude] = useState(true); // waves-only for 3s
   const [word, setWord] = useState('');
+  const [canProceed, setCanProceed] = useState(false);
 
   useEffect(() => {
     // waves-only for 3 seconds before showing page 0
@@ -20,7 +21,7 @@ export default function FinalOverlay({ onRestart, onClose }) {
     if (!Speech) {
       // fallback: proceed if not supported
       setWord('나의');
-      setTimeout(() => setPage(1), 4000);
+      setCanProceed(true);
       return;
     }
     try {
@@ -36,19 +37,27 @@ export default function FinalOverlay({ onRestart, onClose }) {
         } catch {}
         setListening(false);
         try { recog.stop(); } catch {}
-        // advance after showing the recognized word for 4 seconds
-        setTimeout(() => setPage(1), 4000);
+        setCanProceed(true); // enable Next explicitly
       };
       recog.onerror = () => {
         setListening(false);
         try { recog.stop(); } catch {}
+        setCanProceed(true);
       };
       recog.onend = () => setListening(false);
       recogRef.current = recog;
       recog.start();
     } catch {
-      setPage(1);
+      setCanProceed(true);
     }
+  };
+  const stopListening = () => {
+    try {
+      recogRef.current?.stop?.();
+    } catch {}
+    setListening(false);
+    if (!word) setWord('나의');
+    setCanProceed(true);
   };
 
   return (
@@ -60,13 +69,17 @@ export default function FinalOverlay({ onRestart, onClose }) {
               <div className={styles.finalTextMain}>오늘 당신은</div>
               <div className={styles.finalMiddle}>
                 {word ? (
-                  <div className={styles.finalWord}>{word}</div>
+                  <div className={styles.finalWordWrap}>
+                    <span className={styles.finalQuote} aria-hidden>&apos;</span>
+                    <div className={styles.finalWord}>{word}</div>
+                    <span className={styles.finalQuote} aria-hidden>&apos;</span>
+                  </div>
                 ) : (
                   <button
                     type="button"
                     className={`${styles.finalMicLargeBtn} ${listening ? styles.finalMicBtnActive : ''}`}
-                    onClick={startListening}
-                    aria-label="마이크로 말하기 시작"
+                    onClick={listening ? stopListening : startListening}
+                    aria-label={listening ? '말하기 중지' : '마이크로 말하기 시작'}
                   >
                     <svg width="40" height="52" viewBox="0 0 92 119" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                       <path d="M66 26.2321C66 14.0819 57.3218 4.5 46 4.5C34.6782 4.5 25 14.3705 25 26.5208" stroke="white" strokeWidth="9"/>
@@ -79,8 +92,16 @@ export default function FinalOverlay({ onRestart, onClose }) {
                   </button>
                 )}
               </div>
-              <div className={styles.finalTextMain}>파도를 잠재웠습니다.</div>
-              <div className={styles.finalMicHint}>마이크 버튼을 누르고 말해보세요.</div>
+              <div className={`${styles.finalTextMain} ${styles.finalTextBottom}`}>파도를 잠재웠습니다.</div>
+              {(() => {
+                const msg = listening
+                  ? '말하기가 끝났다면 마이크를 꺼 주세요.'
+                  : (word ? '' : '마이크 버튼을 누르고 말해보세요.');
+                return msg ? <div className={styles.finalMicHint}>{msg}</div> : null;
+              })()}
+              {(!listening && canProceed) ? (
+                <button type="button" className={styles.finalNextBtn} onClick={() => setPage(1)}>다음</button>
+              ) : null}
             </div>
           ) : (
             <div className={`${styles.finalPage} ${styles.finalPageVisible}`}>

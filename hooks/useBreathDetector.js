@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
+import { isIOSDevice } from '../utils/platform';
 
 // Simple breath detector based on RMS energy with hysteresis and throttle.
 export function useBreathDetector(onBreath, opts = {}) {
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-  const isiOS = /iP(hone|ad|od)/i.test(ua);
+  const isiOS = isIOSDevice();
   const thresholdDelta = typeof opts.thresholdDelta === 'number' ? opts.thresholdDelta : 0.18; // stricter by default
   const absMinRms = typeof opts.absMinRms === 'number' ? opts.absMinRms : (isiOS ? 0.02 : 0.06); // iOS mics often lower RMS
   const cooldownMs = typeof opts.cooldownMs === 'number' ? opts.cooldownMs : 1800;
+  const holdFrames = typeof opts.holdFrames === 'number' ? opts.holdFrames : (isiOS ? 18 : 24); // require sustained exhale
+  const armAfterMs = typeof opts.armAfterMs === 'number' ? opts.armAfterMs : 500; // ignore first N ms (stabilize)
   const ctxRef = useRef(null);
   const srcRef = useRef(null);
   const anaRef = useRef(null);
@@ -14,7 +16,9 @@ export function useBreathDetector(onBreath, opts = {}) {
   const lastTriggerRef = useRef(0);
   const baselineRef = useRef(0.01);
   const overFramesRef = useRef(0);
+  const armedAtRef = useRef(0);
 
+  const handlersRef = useRef([]);
   useEffect(() => {
     let stream;
     let mounted = true;
@@ -32,22 +36,29 @@ export function useBreathDetector(onBreath, opts = {}) {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         ctxRef.current = ctx;
         // iOS/Safari: ensure AudioContext is resumed on first gesture/visibility
-        const unlock = () => {
-          try {
-            if (ctxRef.current && ctxRef.current.state !== 'running') {
-              ctxRef.current.resume().catch(() => {});
-            }
-          } catch {}
-        };
-        const onVisibility = () => {
-          if (!document.hidden) unlock();
-        };
-        window.addEventListener('touchend', unlock, { passive: true });
-        window.addEventListener('pointerdown', unlock, { passive: true });
-        window.addEventListener('click', unlock, { passive: true });
-        window.addEventListener('keydown', unlock, { passive: true });
-        document.addEventListener('visibilitychange', onVisibility);
-        window.addEventListener('focus', unlock);
+        if (isiOS) {
+          const unlock = () => {
+            try {
+              if (ctxRef.current && ctxRef.current.state !== 'running') {
+                ctxRef.current.resume().catch(() => {});
+              }
+            } catch {}
+          };
+          const onVisibility = () => {
+            if (!document.hidden) unlock();
+          };
+          const add = (target, type, fn, opts) => {
+            target.addEventListener(type, fn, opts);
+            handlersRef.current.push({ target, type, fn, opts });
+          };
+          add(window, 'touchend', unlock, { passive: true });
+          add(window, 'pointerdown', unlock, { passive: true });
+          add(window, 'click', unlock, { passive: true });
+          add(window, 'keydown', unlock, { passive: true });
+          add(document, 'visibilitychange', onVisibility);
+          add(window, 'focus', unlock);
+        }
+        armedAtRef.current = performance.now() + armAfterMs;
         const src = ctx.createMediaStreamSource(stream);
         srcRef.current = src;
         const ana = ctx.createAnalyser();
@@ -70,13 +81,19 @@ export function useBreathDetector(onBreath, opts = {}) {
           baselineRef.current = baselineRef.current * 0.995 + rms * 0.005;
           const threshold = baselineRef.current + thresholdDelta; // adjustable sensitivity
           const now = performance.now();
+          // Ignore until armed
+          if (now < armedAtRef.current) {
+            overFramesRef.current = 0;
+            rafRef.current = requestAnimationFrame(loop);
+            return;
+          }
           if (rms > threshold && rms > absMinRms) {
             overFramesRef.current += 1;
           } else {
             overFramesRef.current = 0;
           }
-          // require ~200ms over-threshold to trigger (assuming ~60fps)
-          if (overFramesRef.current >= 12 && now - lastTriggerRef.current > cooldownMs) {
+          // require sustained frames above threshold
+          if (overFramesRef.current >= holdFrames && now - lastTriggerRef.current > cooldownMs) {
             lastTriggerRef.current = now;
             overFramesRef.current = 0;
             onBreath?.();
@@ -92,12 +109,11 @@ export function useBreathDetector(onBreath, opts = {}) {
       mounted = false;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (ctxRef.current) ctxRef.current.close();
-      window.removeEventListener('touchend', () => {});
-      window.removeEventListener('pointerdown', () => {});
-      window.removeEventListener('click', () => {});
-      window.removeEventListener('keydown', () => {});
-      document.removeEventListener('visibilitychange', () => {});
-      window.removeEventListener('focus', () => {});
+      // remove all registered handlers
+      handlersRef.current.forEach(({ target, type, fn, opts }) => {
+        try { target.removeEventListener(type, fn, opts); } catch {}
+      });
+      handlersRef.current = [];
       if (srcRef.current) {
         try {
           const tracks = srcRef.current.mediaStream?.getTracks?.() || [];

@@ -3,6 +3,7 @@ import { narrativeBeats } from '../data/narrative';
 import { useAudio } from '../hooks/useAudio';
 import { useBreathDetector } from '../hooks/useBreathDetector';
 import styles from '../styles/Index.module.css';
+import { isIOSDevice } from '../utils/platform';
 
 export default function BreathEngine({
   onBgColor,
@@ -12,6 +13,7 @@ export default function BreathEngine({
   onSectionChange,
   stageColorDefault = '#DBE7EA',
 }) {
+  const LINE_EXTRA_MS = 2000; // global extra time per line
   const beats = useMemo(() => narrativeBeats.filter(b => !b.hidden), []);
   const [idx, setIdx] = useState(0);
   const [lineIdx, setLineIdx] = useState(0);
@@ -93,7 +95,8 @@ export default function BreathEngine({
     // lines
     setLineIdx(0);
     if ((b.lines?.length || 0) > 1) {
-      timers.current.push(setTimeout(() => setLineIdx(1), b.lineMs || 3000));
+      const base = b.lineMs || 3000;
+      timers.current.push(setTimeout(() => setLineIdx(1), base + LINE_EXTRA_MS));
     }
     // initial wave directive per beat at first line
     try {
@@ -171,7 +174,7 @@ export default function BreathEngine({
     setShowSeconds(b.trigger === 'exhale' || b.trigger === 'pause');
     // interlude advance automatically when debug not used
     const totalMs =
-      ((b.lines?.length || 0) * (b.lineMs || 3000)) + (b.interludeMs || 0);
+      ((b.lines?.length || 0) * ((b.lineMs || 3000) + LINE_EXTRA_MS)) + (b.interludeMs || 0);
     // For inhale/none triggers, auto-advance after duration with countdown
     if (b.trigger === 'pause') {
       // hide capsule entirely during pause, show centered '멈춤' text
@@ -286,8 +289,7 @@ export default function BreathEngine({
   const lineB = current.lines?.[1] || '';
 
   // Breath control: strong exhale -> graceful advance
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-  const isiOS = /iP(hone|ad|od)/i.test(ua);
+  const isiOS = isIOSDevice();
   useBreathDetector(() => {
     // If not started yet, first exhale begins the narrative
     if (!started) {
@@ -346,7 +348,13 @@ export default function BreathEngine({
         advance();
       }
     }, totalMs);
-  }, { thresholdDelta: isiOS ? 0.05 : 0.07, cooldownMs: 900, absMinRms: isiOS ? 0.02 : 0.06 });
+  }, {
+    thresholdDelta: isiOS ? 0.06 : 0.09,
+    cooldownMs: 900,
+    absMinRms: isiOS ? 0.03 : 0.08,
+    holdFrames: isiOS ? 24 : 28,
+    armAfterMs: 600
+  });
 
   return (
     <>

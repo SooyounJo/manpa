@@ -7,6 +7,34 @@ import BreathEngine from '../components/BreathEngine';
 import FinalOverlay from './FinalOverlay';
 import OpenInChromePrompt from './OpenInChromePrompt';
 import { useAudio } from '../hooks/useAudio';
+import { isIOSDevice } from '../utils/platform';
+
+const GUIDE_SCREENS = [
+  // 1. 작품 설명 (3파트)
+  {
+    id: 'g-1',
+    text: '들숨과 날숨을 감지하여,파도 기반 비주얼\n사운드 스케이프가 실시간 변화나는\n인터랙티브 힐링 미디어 아트 앱입니다',
+  },
+  {
+    id: 'g-2',
+    text: '호흡의 속도·강도에 따라 파도의 모습,\n음향 질감이 유기적으로 반응하며\n사용자에게 개인화 몰입·명상 경험을 제공합니다.',
+  },
+  // 2. 세부내용 (2파트)
+  {
+    id: 'g-4',
+    text: '만파식적은\n거친 파도를 잠재우고, 마음을 편안하게 하는\n[신라시대 문무왕] 전설 속의 피리’입니다',
+  },
+  {
+    id: 'g-5',
+    text: '이 ʻ만파식적:호흡으로 잠재우는 마음의 파동’은,\n그 의미를 현대적으로 확장해\n파도를 잠재우는 힘 = 내 마음의 파동을 다스리는\n경험으로 풀어냅니다.',
+  },
+  // 3. 작품 참여 방법 (2파트)
+  {
+    id: 'g-7',
+    text: '중앙에 뜨는 들숨, 멈춤, 날숨에 대한 설명을 따라\n입으로 소리 내며 숨쉬어 주세요.',
+    header: 'tip',
+  },
+];
 
 export default function LandingExperience() {
   const [visibleIds, setVisibleIds] = useState(() => new Set());
@@ -51,8 +79,11 @@ export default function LandingExperience() {
   const lastWaveKeyRef = useRef('');
   // soft re-entry groups (opacity-only)
   const [softReenterGroups, setSoftReenterGroups] = useState(() => new Set());
-  // Early audio permission modal
-  const [showAudioModal, setShowAudioModal] = useState(true);
+  // Early audio permission modal (iOS only) — init closed on SSR to avoid hydration mismatch
+  const [showAudioModal, setShowAudioModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [todayStr, setTodayStr] = useState('');
+  const [guideIdx, setGuideIdx] = useState(-1); // -1: not showing, 0..N: guide pages
   const incrementBreathCount = () => {
     if (typeof window === 'undefined') return;
     try {
@@ -60,6 +91,16 @@ export default function LandingExperience() {
       const next = cur + 1;
       window.localStorage.setItem('manpa_breath_count', String(next));
       setBreathCount(next);
+    } catch {}
+  };
+
+  const resetWavesToGroup1 = () => {
+    try {
+      setVisibleIds(new Set(GROUPS.current?.[1] || []));
+      setReenterGroups(new Set());
+      setSoftReenterGroups(new Set());
+      setExitGroups(new Set());
+      lastWaveKeyRef.current = '';
     } catch {}
   };
   useEffect(() => {
@@ -70,10 +111,23 @@ export default function LandingExperience() {
     } catch {}
   }, []);
 
+  // Mark mounted and set client-only states to prevent SSR/CSR mismatch
+  useEffect(() => {
+    setMounted(true);
+    // Gate audio modal only after mount (iOS only)
+    try {
+      if (isIOSDevice()) setShowAudioModal(true);
+    } catch {}
+    // Compute date string once on client to avoid timezone mismatch issues
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setTodayStr(`${y}.${m}.${day}`);
+  }, []);
+
   const [showHeadphoneHint, setShowHeadphoneHint] = useState(true);
   const [introReady, setIntroReady] = useState(false);
-  const [showBreathGuide, setShowBreathGuide] = useState(false);
-  const [showExhaleHint, setShowExhaleHint] = useState(false);
 
   // Headphone hint then start intro
   useEffect(() => {
@@ -142,7 +196,7 @@ export default function LandingExperience() {
   // BGM: start from story engine; keep looping; ignore triggers
   useEffect(() => {
     if (showEngine && !bgmStartedRef.current) {
-      const bgmPath = encodeURI('/music/bgm (1).mp3');
+      const bgmPath = encodeURI('/music/bgm_new.mp3');
       playLoop(bgmPath, { volume: 0.6 });
       bgmStartedRef.current = true;
     }
@@ -170,6 +224,25 @@ export default function LandingExperience() {
     }
   };
 
+  const handleGuideNext = () => {
+    setGuideIdx((prev) => {
+      const next = prev + 1;
+      if (next >= GUIDE_SCREENS.length) {
+        // 마지막 페이지 후 바로 스토리 시작
+        resetWavesToGroup1(); // story should start with 1-x only
+        incrementBreathCount();
+        setShowEngine(true);
+        setStageColor('#DBE7EA');
+        setShowTopCapsule(true);
+        return -1;
+      }
+      return next;
+    });
+  };
+  const handleGuidePrev = () => {
+    setGuideIdx((prev) => (prev > 0 ? prev - 1 : 0));
+  };
+
   // Not used for landing anymore; messages are driven by mode selection
   // Wave directive handler (from BreathEngine)
   const applyWaveDirective = (directive) => {
@@ -177,13 +250,16 @@ export default function LandingExperience() {
     // Build visible id set from requested groups
     if (directive.type === 'show' && Array.isArray(directive.groups)) {
       const key = `show:${directive.groups.sort().join(',')}|re:${(directive.reenter || []).sort().join(',')}`;
-      if (lastWaveKeyRef.current === key) return;
-      lastWaveKeyRef.current = key;
-      const ids = [];
-      directive.groups.forEach((g) => ids.push(...(GROUPS.current[g] || [])));
-      setVisibleIds(new Set(ids));
-      setReenterGroups(new Set(directive.reenter || []));
-      setSoftReenterGroups(new Set(directive.softReenter ? (directive.reenter || []) : []));
+      if (lastWaveKeyRef.current !== key) {
+        lastWaveKeyRef.current = key;
+      }
+      const idsToAdd = [];
+      directive.groups.forEach((g) => idsToAdd.push(...(GROUPS.current[g] || [])));
+      // STORY: union only — never remove existing visible ids
+      setVisibleIds((prev) => new Set([...prev, ...idsToAdd]));
+      // STORY: do not reenter; prevent any fade/opacity by clearing reenter flags
+      setReenterGroups(new Set());
+      setSoftReenterGroups(new Set());
       setExitGroups(new Set());
       return;
     }
@@ -210,7 +286,13 @@ export default function LandingExperience() {
         exitGroups={exitGroups}
         stageColor={stageColor}
         isIntro={!showEngine}
-        dimOverlay={((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000')) ? (showFinal ? 0.75 : 0.65) : 0}
+        dimOverlay={
+          (guideIdx >= 0 && !showEngine && !showFinal && !finalHold)
+            ? 0.8
+            : ((showEngine || showFinal || finalHold) && (stageColor === '#000000' || stageColor === '#000'))
+              ? (showFinal ? 0.75 : 0.65)
+              : 0
+        }
         ampScale={ampScale}
         softReenterGroups={softReenterGroups}
       />
@@ -243,7 +325,7 @@ export default function LandingExperience() {
           plain
           onPrimary={() => {
             if (!bgmStartedRef.current) {
-              const bgmPath = encodeURI('/music/bgm (1).mp3');
+              const bgmPath = encodeURI('/music/bgm_new.mp3');
               playLoop(bgmPath, { volume: 0.6 });
               bgmStartedRef.current = true;
             }
@@ -264,47 +346,50 @@ export default function LandingExperience() {
             setShowMicModal(false);
             setTypoFade(true);
              resumeLoop(); // safeguard against mic permission side-effect
-            // begin meditation flow automatically after 2s
+            // 2초 후 인트로 타이포 수거 + 호흡 가이드 스텝 시작
             postTimersRef.current.push(setTimeout(() => {
-               // Show 4s breath guide on dark screen, then start engine
-               setStageColor('#000');
-               setShowBreathGuide(true);
-               setBrandVisible(false);
-               setTaglineVisible(false);
-               const g = setTimeout(() => {
-                // after 4s primary guide, show 3s exhale hint before starting
-                setShowBreathGuide(false);
-                setShowExhaleHint(true);
-                const h = setTimeout(() => {
-                  setShowExhaleHint(false);
-                  // start new breathing session; count up
-                  incrementBreathCount();
-                  setShowEngine(true);
-                  setStageColor('#DBE7EA'); // start story on bright background
-                  setShowTopCapsule(true); // ensure capsules are shown from the first narrative message
-                }, 3000);
-                postTimersRef.current.push(h);
-               }, 4000);
-               postTimersRef.current.push(g);
+              setStageColor('#000');
+              setBrandVisible(false);
+              setTaglineVisible(false);
+              setGuideIdx(0);
             }, 2000));
           }}
         />
-         {showBreathGuide ? (
-           <div className={styles.centerText}>
-             <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
-             <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
-              4초간 들이쉬고, 잠시 멈춘 뒤<br/>8초 동안 &apos;입으로&apos; 내쉬어 보세요
-             </div>
-           </div>
-         ) : null}
-         {showExhaleHint ? (
-           <div className={styles.centerText}>
-             <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
-             <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.guideMsg}`}>
-               날숨은 소리가 마이크 가까이<br/>잘 들리도록 크게 내쉬어주세요
-             </div>
-           </div>
-         ) : null}
+        {guideIdx >= 0 && guideIdx < GUIDE_SCREENS.length && !showEngine && !showFinal && !finalHold ? (
+          <div className={styles.centerTextInteractive}>
+            <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
+              <div className={styles.guideBlock}>
+              {guideIdx === 3 ? null : (
+                  <div className={`${styles.guideTitle} ${styles.guidePretendard}`}>
+                  {GUIDE_SCREENS[guideIdx]?.header
+                    ? GUIDE_SCREENS[guideIdx].header
+                    : (guideIdx >= 2 ? '만파식적(萬波息笛)' : '작품설명')}
+                </div>
+              )}
+                <div className={`${styles.guideText} ${styles.guidePretendard}`}>{GUIDE_SCREENS[guideIdx].text}</div>
+              <div className={styles.guideActions}>
+                {guideIdx > 0 ? (
+                  <button
+                    type="button"
+                    className={styles.guidePrevBtnInline}
+                    onClick={handleGuidePrev}
+                    aria-label="이전"
+                  >
+                    이전
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className={styles.guideNextBtnInline}
+                  onClick={handleGuideNext}
+                  aria-label={guideIdx === GUIDE_SCREENS.length - 1 ? '시작하기' : '다음'}
+                >
+                  {guideIdx === GUIDE_SCREENS.length - 1 ? '시작하기' : '다음'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {showEngine ? (
           <div className={`${styles.fadeIn} ${styles.fadeInVisible}`}>
             <BreathEngine
@@ -337,7 +422,7 @@ export default function LandingExperience() {
             <img src="/img/manpa.png" alt="manpa" className={styles.miniLogo} style={capsuleHeight ? { height: `${capsuleHeight}px` } : undefined} />
             <div ref={topCapsuleRef} className={`${styles.capsuleTop} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
               <div className={styles.capsuleDate}>
-                {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
+                {mounted ? todayStr : ''}
               </div>
               <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
             </div>
@@ -351,7 +436,7 @@ export default function LandingExperience() {
         {(showFinal) ? (
           <div className={`${styles.capsuleTop} ${styles.fadeIn} ${styles.fadeInVisible}`}>
             <div className={styles.capsuleDate}>
-              {new Date().getFullYear()}.{String(new Date().getMonth()+1).padStart(2,'0')}.{String(new Date().getDate()).padStart(2,'0')}
+              {mounted ? todayStr : ''}
             </div>
             <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
           </div>
@@ -361,6 +446,7 @@ export default function LandingExperience() {
             onRestart={() => {
               setShowFinal(false);
               setStageColor('#DBE7EA');
+              resetWavesToGroup1(); // restart story with 1-x only
               // count next session
               incrementBreathCount();
               setShowEngine(true);

@@ -25,7 +25,7 @@ const waves = [
   { id: '4-5', group: 4, src: '/wave/4-5.png' },
 ];
 
-function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1, softReenterGroups }) {
+function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor = '#000', dimOverlay = 0, ampScale = 1, softReenterGroups, isIntro = false }) {
   const computeZIndex = (group, id) => {
     // Ensure group 1 > 2 > 3 > 4
     const baseByGroup = { 1: 400, 2: 300, 3: 200, 4: 100 };
@@ -82,8 +82,9 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
   };
 
   const computeEnterOffset = (id) => {
-    const dx = 8; // vw
-    const dy = 8; // vh
+    const groupNum = parseInt(String(id).split('-')[0], 10) || 1;
+    const dx = groupNum === 1 ? 8 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vw
+    const dy = groupNum === 1 ? 8 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vh
     switch (id) {
       // Group 1
       case '1-1': return { x: `${dx}vw`,  y: `-${dy}vh` }; // top-right → center
@@ -122,6 +123,18 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
         const invert = (v) => (v === '0' ? '0' : (v.startsWith('-') ? v.slice(1) : `-${v}`));
         const exitXStr = invert(enter.x);
         const exitYStr = invert(enter.y);
+        // per-image stagger/duration for organic entrance (story)
+        const suf = parseInt(String(wave.id).split('-')[1], 10) || 0;
+        const baseEnterDelay =
+          wave.group === 2 ? 100 :
+          wave.group === 3 ? 120 :
+          wave.group === 4 ? 140 : 40;
+        const enterDelay = baseEnterDelay + ((wave.group * 23 + suf * 29) % 180); // 40/100/120/140 .. +180
+        const baseEnterDur =
+          wave.group === 2 ? 1200 :
+          wave.group === 3 ? 1400 :
+          wave.group === 4 ? 1600 : 900;
+        const storyEnterDur = baseEnterDur + ((wave.group * 37 + suf * 19) % 400); // +0..399ms
         return (
           <img
             key={wave.id}
@@ -131,7 +144,8 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
               styles.wave,
               styles[`layer${wave.group}`],
               isVisible ? styles.visible : '',
-              reenter ? (softReenter ? styles.reenterSoft : styles.reenter) : '',
+              // Only allow reenter animations during intro; in story, rely on translate-only via .story .visible
+              reenter && isIntro ? (softReenter ? styles.reenterSoft : styles.reenter) : '',
               !reenter && ((exitGroups && exitGroups.has?.(wave.group)) || (exiting && wave.group !== 1)) ? styles.exit : '',
             ].join(' ')}
             style={{
@@ -144,6 +158,8 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
               ['--enterY']: enter.y,
               ['--ampX']: `${ax}px`,
               ['--ampY']: `${ay}px`,
+              ['--enterDelay']: `${enterDelay}ms`,
+              ['--storyEnterDur']: `${storyEnterDur}ms`,
             }}
             decoding="async"
             loading="eager"
