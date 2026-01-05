@@ -13,20 +13,54 @@ const GUIDE_SCREENS = [
   // 1. 작품 설명 (3파트)
   {
     id: 'g-1',
-    text: '들숨과 날숨을 감지하여,파도 기반 비주얼\n사운드 스케이프가 실시간 변화나는\n인터랙티브 힐링 미디어 아트 앱입니다',
+    content: (
+      <>
+        들숨과 날숨을 감지하여, 파도 기반 비주얼
+        <br />
+        사운드 스케이프가 실시간 변화하는
+        <br />
+        <strong>인터랙티브 힐링 미디어 아트 앱입니다</strong>
+      </>
+    ),
   },
   {
     id: 'g-2',
-    text: '호흡의 속도·강도에 따라 파도의 모습,\n음향 질감이 유기적으로 반응하며\n사용자에게 개인화 몰입·명상 경험을 제공합니다.',
+    content: (
+      <>
+        호흡의 속도·강도에 따라 파도의 움직임,
+        <br />
+        음향의 질감이 유기적으로 반응하며
+        <br />
+        사용자에게 개인화된 <strong>몰입·명상 경험</strong>을 제공합니다.
+      </>
+    ),
   },
   // 2. 세부내용 (2파트)
   {
     id: 'g-4',
-    text: '만파식적은\n거친 파도를 잠재우고, 마음을 편안하게 하는\n[신라시대 문무왕] 전설 속의 피리’입니다',
+    content: (
+      <>
+        만파식적은
+        <br />
+        거친 파도를 잠재우고, 마음을 편안하게 하는
+        <br />
+        <strong>[신라시대 문무왕]</strong> 전설 속의 피리입니다
+      </>
+    ),
   },
   {
     id: 'g-5',
-    text: '이 ʻ만파식적:호흡으로 잠재우는 마음의 파동’은,\n그 의미를 현대적으로 확장해\n파도를 잠재우는 힘 = 내 마음의 파동을 다스리는\n경험으로 풀어냅니다.',
+    content: (
+      <>
+        이 ʻ만파식적:호흡으로 잠재우는 마음의 파동’은,
+        <br />
+        그 의미를 현대적으로 확장해
+        <br />
+        <strong>파도를 잠재우는 힘 = 내 마음의 파동</strong>을 다스리는
+        <br />
+        경험으로 풀어냅니다.
+      </>
+    ),
   },
   // 3. 작품 참여 방법 (2파트)
   {
@@ -79,7 +113,7 @@ export default function LandingExperience() {
   const lastWaveKeyRef = useRef('');
   // soft re-entry groups (opacity-only)
   const [softReenterGroups, setSoftReenterGroups] = useState(() => new Set());
-  // Early audio permission modal (iOS only) — init closed on SSR to avoid hydration mismatch
+  // Early audio permission modal — init closed on SSR to avoid hydration mismatch
   const [showAudioModal, setShowAudioModal] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [todayStr, setTodayStr] = useState('');
@@ -114,10 +148,8 @@ export default function LandingExperience() {
   // Mark mounted and set client-only states to prevent SSR/CSR mismatch
   useEffect(() => {
     setMounted(true);
-    // Gate audio modal only after mount (iOS only)
-    try {
-      if (isIOSDevice()) setShowAudioModal(true);
-    } catch {}
+    // Gate audio modal after mount (all devices). User must confirm to proceed.
+    setShowAudioModal(true);
     // Compute date string once on client to avoid timezone mismatch issues
     const d = new Date();
     const y = d.getFullYear();
@@ -129,8 +161,10 @@ export default function LandingExperience() {
   const [showHeadphoneHint, setShowHeadphoneHint] = useState(true);
   const [introReady, setIntroReady] = useState(false);
 
-  // Headphone hint then start intro
+  // Headphone hint then start intro (blocked until audio permission confirmed)
   useEffect(() => {
+    if (!mounted) return;
+    if (showAudioModal) return; // must confirm audio before proceeding
     setStageColor('#000');
     const t = setTimeout(() => {
       setShowHeadphoneHint(false);
@@ -138,7 +172,7 @@ export default function LandingExperience() {
       resumeLoop();
     }, 4000);
     return () => clearTimeout(t);
-  }, []);
+  }, [mounted, showAudioModal, resumeLoop]);
 
   useEffect(() => {
     if (!introReady) return;
@@ -326,7 +360,8 @@ export default function LandingExperience() {
           onPrimary={() => {
             if (!bgmStartedRef.current) {
               const bgmPath = encodeURI('/music/bgm_new.mp3');
-              playLoop(bgmPath, { volume: 0.6 });
+              // iOS: prime start inside a user gesture to unlock audio reliably
+              playLoop(bgmPath, { volume: 0.6, prime: true });
               bgmStartedRef.current = true;
             }
             setShowAudioModal(false);
@@ -366,7 +401,9 @@ export default function LandingExperience() {
                     : (guideIdx >= 2 ? '만파식적(萬波息笛)' : '작품설명')}
                 </div>
               )}
-                <div className={`${styles.guideText} ${styles.guidePretendard}`}>{GUIDE_SCREENS[guideIdx].text}</div>
+                <div className={`${styles.guideText} ${styles.guidePretendard}`}>
+                  {GUIDE_SCREENS[guideIdx].content ?? GUIDE_SCREENS[guideIdx].text}
+                </div>
               <div className={styles.guideActions}>
                 {guideIdx > 0 ? (
                   <button
