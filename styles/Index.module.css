@@ -447,7 +447,7 @@
   display: grid;
   place-items: center;
   text-align: center;
-  padding: 24px;
+  padding: 24px 24px calc(24px + env(safe-area-inset-bottom)) 24px;
   pointer-events: auto;
 }
 .guideBlock {
@@ -458,6 +458,7 @@
   gap: 12px;
   position: relative;
   z-index: 1; /* above dim gradient */
+  padding-bottom: 6px; /* keep actions fully visible */
 }
 .guideTitle {
   color: #ffffff;
@@ -493,10 +494,11 @@
 }
 .guideActions {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   gap: 10px;
   margin-top: 16px;
+  width: min(86vw, 360px);
 }
 .guideNextBtnInline,
 .guidePrevBtnInline {
@@ -508,6 +510,12 @@
   padding: 8px 18px;
   font-size: 12px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+  min-width: 108px;
+}
+
+.guideActionSpacer {
+  display: inline-block;
+  min-width: 108px; /* match button width so '다음' stays on the right even without '이전' */
 }
 .guideHeader {
   position: absolute;

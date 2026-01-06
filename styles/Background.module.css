@@ -1,13 +1,11 @@
 .stage {
   position: fixed;
-  inset: 0;
+  inset: -2px; /* avoid 1px seams/gaps on mobile GPU rounding */
   z-index: 0;
   background: var(--stageColor, #000); /* configurable stage color */
   transition: background 500ms ease;
   pointer-events: none; /* make purely decorative */
-  width: 100vw;
-  height: 100vh;
-  height: 100svh; /* stable viewport (prevents Chrome address-bar resize flashing) */
+  /* rely on inset for sizing; avoids vh rounding issues */
   overflow: hidden;
   /* subtle upscaling for all waves */
   --startScale: 0.98;
@@ -36,9 +34,9 @@
 
 .wave {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -2px; /* avoid edge seams */
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
   object-fit: cover; /* images are full-frame mobile comps */
   opacity: 0;
   /* default enter offset; overridden per-image via CSS vars */

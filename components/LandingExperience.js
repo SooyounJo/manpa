@@ -482,7 +482,9 @@ export default function LandingExperience() {
                   >
                     이전
                   </button>
-                ) : null}
+                ) : (
+                  <span className={styles.guideActionSpacer} aria-hidden />
+                )}
                 <button
                   type="button"
                   className={styles.guideNextBtnInline}
