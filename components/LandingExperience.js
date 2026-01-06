@@ -461,7 +461,7 @@ export default function LandingExperience() {
         {guideIdx >= 0 && guideIdx < GUIDE_SCREENS.length && !showEngine && !showFinal && !finalHold ? (
           <div className={styles.centerTextInteractive}>
             <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
-              <div className={styles.guideBlock}>
+            <div className={styles.guideBlock}>
               {guideIdx === 3 ? null : (
                   <div className={`${styles.guideTitle} ${styles.guidePretendard}`}>
                   {GUIDE_SCREENS[guideIdx]?.header

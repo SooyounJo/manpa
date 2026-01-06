@@ -6,7 +6,8 @@
   transition: background 500ms ease;
   pointer-events: none; /* make purely decorative */
   width: 100vw;
-  height: 100dvh; /* mobile viewport including dynamic bars */
+  height: 100vh;
+  height: 100svh; /* stable viewport (prevents Chrome address-bar resize flashing) */
   overflow: hidden;
   /* subtle upscaling for all waves */
   --startScale: 0.98;

@@ -447,23 +447,17 @@
   display: grid;
   place-items: center;
   text-align: center;
-  /* extra bottom space so content never collides with fixed guide buttons */
-  padding: 24px 24px calc(120px + env(safe-area-inset-bottom)) 24px;
+  padding: 24px;
   pointer-events: auto;
 }
 .guideBlock {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: min(86vw, 420px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  max-height: calc(100dvh - 180px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  position: relative;
+  z-index: 1; /* above dim gradient */
 }
 .guideTitle {
   color: #ffffff;
@@ -498,16 +492,11 @@
   font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif !important;
 }
 .guideActions {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(18px + env(safe-area-inset-bottom));
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 12px;
-  width: min(86vw, 360px);
-  z-index: 1650;
+  gap: 10px;
+  margin-top: 16px;
 }
 .guideNextBtnInline,
 .guidePrevBtnInline {
@@ -546,6 +535,7 @@
   background: radial-gradient(40vw 28vh at 50% 50%, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0) 70%);
   opacity: 0;
   transition: opacity 400ms ease;
+  z-index: 0; /* keep behind text */
 }
 .lightTheme .centerDim {
   /* Use white glow on bright backgrounds */
