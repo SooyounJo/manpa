@@ -12,4 +12,14 @@ export function isIOSDevice() {
   }
 }
 
+export function isAndroidDevice() {
+  if (typeof navigator === 'undefined') return false;
+  try {
+    const ua = navigator.userAgent || '';
+    return /Android/i.test(ua);
+  } catch {
+    return false;
+  }
+}
+
 

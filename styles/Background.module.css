@@ -3,7 +3,8 @@
   inset: -2px; /* avoid 1px seams/gaps on mobile GPU rounding */
   z-index: 0;
   background: var(--stageColor, #000); /* configurable stage color */
-  transition: background 500ms ease;
+  /* 배경색 전환 시에도 GPU 플리커 방지를 위해 트랜지션 제거 */
+  transition: none;
   pointer-events: none; /* make purely decorative */
   /* rely on inset for sizing; avoids vh rounding issues */
   overflow: hidden;
@@ -56,6 +57,11 @@
   --floatDelay: 0ms;
 }
 
+/* Android stability: avoid large blur filters on full-screen PNGs (can create flicker/black tiles) */
+body.is-android .wave {
+  filter: none !important;
+}
+
 /* Story mode: keep non-visible waves hidden; when .visible is applied they translate in (no fade). */
 .story .wave {
   opacity: 0;
@@ -68,27 +74,8 @@
 }
 
 .dim {
-  position: absolute;
-  inset: 0;
-  /* Mobile stability: keep dim as a flat color and only animate opacity.
-     Large animated gradients flicker/band on some Android GPUs (e.g., Note20). */
-  background: rgba(15, 25, 55, 1);
-  opacity: var(--dimOpacity, 0);
-  transition: opacity 4000ms ease;
-  pointer-events: none;
-  z-index: 3000; /* ensure above all waves */
-  will-change: opacity;
-  transform: translateZ(0);
-}
-
-.dim::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* static subtle vignette (not animated) */
-  background: radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.38) 70%);
-  opacity: 1;
+  /* 전체 디바이스에서 dim 오버레이 비사용. (성능/플리커 이슈 방지) */
+  display: none !important;
 }
 
 .visible {
