@@ -189,12 +189,6 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
           introEnterDur += 900;
           storyEnterDur += 900;
         }
-        // Make sure 4-4 is NOT the last/slow one (users perceive it as lagging).
-        if (wave.id === '4-4') {
-          enterDelay = Math.max(0, enterDelay - (isIntro ? 420 : 320));
-          introEnterDur = Math.max(900, introEnterDur - 350);
-          storyEnterDur = Math.max(1400, storyEnterDur - 350);
-        }
         // Intro: start slightly zoomed-in then ease out for more dynamism
         const startScale =
           isIntro

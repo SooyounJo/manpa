@@ -447,19 +447,23 @@
   display: grid;
   place-items: center;
   text-align: center;
-  padding: 24px;
-  /* Reserve space for the bottom buttons and iOS safe-area so content doesn't clip in production */
-  padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  /* extra bottom space so content never collides with fixed guide buttons */
+  padding: 24px 24px calc(120px + env(safe-area-inset-bottom)) 24px;
   pointer-events: auto;
 }
 .guideBlock {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: min(86vw, 420px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  max-height: calc(100dvh - 160px - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - 180px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .guideTitle {
   color: #ffffff;
@@ -494,11 +498,16 @@
   font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif !important;
 }
 .guideActions {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(18px + env(safe-area-inset-bottom));
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  margin-top: 6px;
+  gap: 12px;
+  width: min(86vw, 360px);
+  z-index: 1650;
 }
 .guideNextBtnInline,
 .guidePrevBtnInline {
