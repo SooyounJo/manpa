@@ -91,7 +91,7 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
   const computeEnterOffset = (id) => {
     const groupNum = parseInt(String(id).split('-')[0], 10) || 1;
     // Story: make group1 enter from a bit further out so it doesn't feel like it "just appears".
-    const g1 = isIntro ? 8 : 18;
+    const g1 = isIntro ? 12 : 18;
     const dx = groupNum === 1 ? g1 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vw
     const dy = groupNum === 1 ? g1 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vh
     switch (id) {
@@ -149,31 +149,33 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
           wave.group === 2 ? 40 :
           wave.group === 3 ? 60 :
           80;
-        // Intro timing: more varied "organic" stagger (non-linear distribution)
+        // Intro timing: organic stagger (non-linear distribution)
         // Most slices start quickly, a few lag more to create an "얼기설기" feel.
         const introMaxDelay =
-          wave.group === 1 ? 420 :
-          wave.group === 2 ? 480 :
-          wave.group === 3 ? 520 :
-          560;
+          wave.group === 1 ? 520 :
+          wave.group === 2 ? 580 :
+          wave.group === 3 ? 620 :
+          680;
         const seed =
           (wave.group * 1337) +
           (suf * 97) +
           (String(wave.id).charCodeAt(0) * 31) +
           (String(wave.id).charCodeAt(2) * 17);
         const r = (Math.abs(Math.sin(seed) * 10000) % 1); // 0..1
-        const skew = Math.pow(r, 0.65); // bias toward 0, but keep some big delays
+        const skew = Math.pow(r, 0.38); // more spread (more visible variety)
         const introJitter = Math.round(skew * introMaxDelay);
         let enterDelay = isIntro
           ? introJitter
           : (baseEnterDelay + ((wave.group * 31 + suf * 47) % 160));
 
-        // Intro: a bit faster; Story: slower/organic translate-only
+        // Intro: faster overall, but per-slice variability makes it feel alive.
         let introEnterDur =
           wave.group === 1 ? 1050 :
           wave.group === 2 ? 1250 :
           wave.group === 3 ? 1450 :
           1650;
+        const durVar = Math.round((Math.abs(Math.sin(seed * 1.7)) * 1000) % 650); // 0..649ms
+        introEnterDur += durVar;
         const storyBaseDur =
           wave.group === 1 ? 1700 :
           wave.group === 2 ? 1900 :
@@ -181,11 +183,17 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
           2300;
         let storyEnterDur = storyBaseDur + ((wave.group * 37 + suf * 19) % 500); // +0..499ms
 
-        // Exception: 4-5 should be the very last, slower entrance (intro + story)
+        // Exception: 4-5 should be the "virtual timing 5" — unmistakably last + slow (intro + story)
         if (wave.id === '4-5') {
-          enterDelay += isIntro ? 520 : 420;
-          introEnterDur += 650;
-          storyEnterDur += 650;
+          enterDelay += isIntro ? 1100 : 900;
+          introEnterDur += 900;
+          storyEnterDur += 900;
+        }
+        // Make sure 4-4 is NOT the last/slow one (users perceive it as lagging).
+        if (wave.id === '4-4') {
+          enterDelay = Math.max(0, enterDelay - (isIntro ? 420 : 320));
+          introEnterDur = Math.max(900, introEnterDur - 350);
+          storyEnterDur = Math.max(1400, storyEnterDur - 350);
         }
         // Intro: start slightly zoomed-in then ease out for more dynamism
         const startScale =

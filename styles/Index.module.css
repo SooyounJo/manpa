@@ -448,18 +448,18 @@
   place-items: center;
   text-align: center;
   padding: 24px;
+  /* Reserve space for the bottom buttons and iOS safe-area so content doesn't clip in production */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom));
   pointer-events: auto;
 }
 .guideBlock {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: min(86vw, 420px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  max-height: calc(100dvh - 160px - env(safe-area-inset-bottom));
+  overflow: auto;
 }
 .guideTitle {
   color: #ffffff;
