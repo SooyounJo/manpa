@@ -206,7 +206,9 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
               isVisible ? styles.visible : '',
               // Only allow reenter animations during intro; in story, rely on translate-only via .story .visible
               reenter && isIntro ? (softReenter ? styles.reenterSoft : styles.reenter) : '',
-              !reenter && ((exitGroups && exitGroups.has?.(wave.group)) || (exiting && wave.group !== 1)) ? styles.exit : '',
+              !reenter && ((exitGroups && exitGroups.has?.(wave.group)) || (exiting && wave.group !== 1))
+                ? (!isIntro ? styles.storyExit : styles.exit)
+                : '',
             ].join(' ')}
             style={{
               zIndex: computeZIndex(wave.group, wave.id),

@@ -70,13 +70,25 @@
 .dim {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(120% 80% at 50% 40%, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0.45) 60%),
-    rgba(15, 25, 55, 1); /* darker indigo with vignette */
+  /* Mobile stability: keep dim as a flat color and only animate opacity.
+     Large animated gradients flicker/band on some Android GPUs (e.g., Note20). */
+  background: rgba(15, 25, 55, 1);
   opacity: var(--dimOpacity, 0);
   transition: opacity 4000ms ease;
   pointer-events: none;
   z-index: 3000; /* ensure above all waves */
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+.dim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* static subtle vignette (not animated) */
+  background: radial-gradient(120% 90% at 50% 45%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.38) 70%);
+  opacity: 1;
 }
 
 .visible {
@@ -94,6 +106,11 @@
 
 .exit {
   animation: exitFade 700ms ease-in forwards;
+}
+
+/* Story-only exit: translate out (no opacity change) to avoid "flash" */
+.storyExit {
+  animation: exitTranslate 900ms cubic-bezier(.20,.90,.30,1.02) forwards;
 }
 .reenter {
   animation:
@@ -145,6 +162,17 @@
   to {
     opacity: 0;
     transform: translate3d(0, 0, 0) scale(var(--endScale));
+  }
+}
+
+@keyframes exitTranslate {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--endScale));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(var(--exitX, 0), var(--exitY, 0), 0) scale(var(--endScale));
   }
 }
 

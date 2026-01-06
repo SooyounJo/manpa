@@ -442,15 +442,19 @@
 }
 .centerTextInteractive {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100svh; /* stable visual height on mobile */
   z-index: 1600;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 24px 24px calc(24px + env(safe-area-inset-bottom)) 24px;
   pointer-events: auto;
-  overflow: auto; /* if content is taller on some mobile screens, allow scroll instead of clipping */
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden; /* prevent whole-screen scroll/jank; text scrolls inside */
+  -webkit-overflow-scrolling: auto;
 }
 .guideBlock {
   width: min(86vw, 420px);
@@ -461,6 +465,7 @@
   position: relative;
   z-index: 1; /* above dim gradient */
   padding-bottom: 6px; /* keep actions fully visible */
+  max-height: calc(100svh - 48px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
 }
 .guideTitle {
   color: #ffffff;
@@ -475,8 +480,6 @@
 }
 .guideText {
   margin-top: 6px;
-}
-.guideText {
   color: #ffffff;
   white-space: pre-line;
   text-shadow:
@@ -488,6 +491,10 @@
   font-size: clamp(13px, 4.1vw, 19px);
   line-height: 1.6;
   letter-spacing: 0.01em;
+  /* allow long text to scroll without pushing buttons off-screen */
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  max-height: 48vh;
 }
 
 /* Guide (설명문) should use Pretendard for both header and body */

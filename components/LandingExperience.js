@@ -135,6 +135,22 @@ export default function LandingExperience() {
     } catch {}
     waveTimersRef.current = [];
   };
+
+  const hideGroupsTranslateOnly = (groups, { durMs = 900 } = {}) => {
+    const gs = (groups || []).filter((g) => g !== 1);
+    if (!gs.length) return;
+    setExitGroups(new Set(gs));
+    waveTimersRef.current.push(setTimeout(() => {
+      setVisibleIds((prev) => {
+        const toHide = new Set();
+        gs.forEach((g) => (GROUPS.current[g] || []).forEach((id) => toHide.add(id)));
+        const next = new Set();
+        prev.forEach((id) => { if (!toHide.has(id)) next.add(id); });
+        return next;
+      });
+      setExitGroups(new Set());
+    }, Math.max(0, durMs)));
+  };
   // Story chapter is driven by BreathEngine's onSectionChange (no localStorage counter).
 
   // Mark mounted and set client-only states to prevent SSR/CSR mismatch
@@ -360,21 +376,16 @@ export default function LandingExperience() {
       // Reset back to base after beat finishes (so next exhale can "burst" again)
       if (resetAfterMs != null) {
         waveTimersRef.current.push(setTimeout(() => {
-          setVisibleIds(new Set(baseIds));
+          hideGroupsTranslateOnly([2, 3, 4], { durMs: 900 });
+          // After exit animation, ensure we are back to base
+          waveTimersRef.current.push(setTimeout(() => setVisibleIds(new Set(baseIds)), 920));
         }, Math.max(0, resetAfterMs)));
       }
       return;
     }
     if (directive.type === 'flashHide' && Array.isArray(directive.hideGroups)) {
-      // Story-only: instantly hide specified groups (no opacity animation)
-      setVisibleIds((prev) => {
-        const toHide = new Set();
-        directive.hideGroups.forEach((g) => (GROUPS.current[g] || []).forEach((id) => toHide.add(id)));
-        const next = new Set();
-        prev.forEach((id) => { if (!toHide.has(id)) next.add(id); });
-        return next;
-      });
-      setExitGroups(new Set());
+      // Story-only: translate out then remove (no opacity change)
+      hideGroupsTranslateOnly(directive.hideGroups, { durMs: 900 });
       return;
     }
   };

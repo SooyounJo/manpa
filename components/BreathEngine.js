@@ -111,6 +111,13 @@ export default function BreathEngine({
     setPromptOpacity(1);
     exhaleLockedRef.current = b.trigger !== 'exhale';
     setShowSeconds(b.trigger === 'exhale' || b.trigger === 'pause');
+
+    // If user doesn't exhale for a while, stop the infinite blink (keep the pill visible).
+    if (b.trigger === 'exhale') {
+      timers.current.push(setTimeout(() => {
+        try { setPromptBlink(false); } catch {}
+      }, 12000));
+    }
     // interlude advance automatically when debug not used
     const totalMs =
       ((b.lines?.length || 0) * ((b.lineMs || 3000) + LINE_EXTRA_MS)) + (b.interludeMs || 0);
