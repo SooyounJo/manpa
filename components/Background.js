@@ -114,7 +114,7 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
       case '4-1': return { x: `${dx}vw`,  y: `0` };        // right → left
       case '4-2': return { x: `0`,        y: `${dy}vh` };  // bottom → top
       case '4-3': return { x: `-${dx}vw`, y: `-${dy}vh` }; // top-left → bottom-right
-      case '4-4': return { x: `${dx}vw`,  y: `0` };        // right → left
+      case '4-4': return { x: `0`,        y: `-${dy}vh` }; // top → down
       case '4-5': return { x: `${dx}vw`,  y: `${dy}vh` };  // bottom-right → top-left
       default:    return { x: `0`,        y: `40px` };
     }
