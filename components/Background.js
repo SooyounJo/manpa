@@ -67,24 +67,33 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
       return { ax: 0.5, ay: 1 };
     }
     if (group === 1) {
-      // Keep top layer very subtle
-      const ax = 1;
-      const ay = 2;
+      // Intro: subtle. Story: stronger immediately.
+      const ax = isIntro ? 1 : 4;
+      const ay = isIntro ? 2 : 5;
       return { ax, ay };
     }
     // Mild variance for deeper layers, with optional global multiplier
     const seedX = (group * 101 + suffix * 13) % 5; // 0..4
     const seedY = (group * 103 + suffix * 17) % 5; // 0..4
-    const baseAx = 6 + seedX; // 6..10px
-    const baseAy = 4 + seedY; // 4..8px
+    // Make 3/4 more intense as requested
+    const baseAx =
+      group === 3 ? (10 + seedX) :
+      group === 4 ? (12 + seedX) :
+      (6 + seedX);
+    const baseAy =
+      group === 3 ? (8 + seedY) :
+      group === 4 ? (10 + seedY) :
+      (4 + seedY);
     const mult = ampScale || 1;
     return { ax: baseAx * mult, ay: baseAy * mult };
   };
 
   const computeEnterOffset = (id) => {
     const groupNum = parseInt(String(id).split('-')[0], 10) || 1;
-    const dx = groupNum === 1 ? 8 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vw
-    const dy = groupNum === 1 ? 8 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vh
+    // Story: make group1 enter from a bit further out so it doesn't feel like it "just appears".
+    const g1 = isIntro ? 8 : 18;
+    const dx = groupNum === 1 ? g1 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vw
+    const dy = groupNum === 1 ? g1 : groupNum === 2 ? 60 : groupNum === 3 ? 90 : 120; // vh
     switch (id) {
       // Group 1
       case '1-1': return { x: `${dx}vw`,  y: `-${dy}vh` }; // top-right → center
@@ -112,7 +121,15 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
   };
 
   return (
-    <div className={styles.stage} aria-hidden style={{ ['--stageColor']: stageColor }}>
+    <div
+      className={[
+        styles.stage,
+        styles.stageFadeIn,
+        !isIntro ? styles.story : '',
+      ].join(' ')}
+      aria-hidden
+      style={{ ['--stageColor']: stageColor }}
+    >
       {waves.map((wave) => {
         const isVisible = visibleIds?.has(wave.id);
         const { durationMs, delayMs } = computeFloat(wave.group, wave.id);
@@ -125,16 +142,57 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
         const exitYStr = invert(enter.y);
         // per-image stagger/duration for organic entrance (story)
         const suf = parseInt(String(wave.id).split('-')[1], 10) || 0;
+        // Intro: basically immediate, but with tiny, scrambled offsets so it feels "얼기설기".
+        // Story: keep delays small so bursts feel responsive.
         const baseEnterDelay =
-          wave.group === 2 ? 100 :
-          wave.group === 3 ? 120 :
-          wave.group === 4 ? 140 : 40;
-        const enterDelay = baseEnterDelay + ((wave.group * 23 + suf * 29) % 180); // 40/100/120/140 .. +180
-        const baseEnterDur =
-          wave.group === 2 ? 1200 :
-          wave.group === 3 ? 1400 :
-          wave.group === 4 ? 1600 : 900;
-        const storyEnterDur = baseEnterDur + ((wave.group * 37 + suf * 19) % 400); // +0..399ms
+          wave.group === 1 ? 0 :
+          wave.group === 2 ? 40 :
+          wave.group === 3 ? 60 :
+          80;
+        // Intro timing: more varied "organic" stagger (non-linear distribution)
+        // Most slices start quickly, a few lag more to create an "얼기설기" feel.
+        const introMaxDelay =
+          wave.group === 1 ? 420 :
+          wave.group === 2 ? 480 :
+          wave.group === 3 ? 520 :
+          560;
+        const seed =
+          (wave.group * 1337) +
+          (suf * 97) +
+          (String(wave.id).charCodeAt(0) * 31) +
+          (String(wave.id).charCodeAt(2) * 17);
+        const r = (Math.abs(Math.sin(seed) * 10000) % 1); // 0..1
+        const skew = Math.pow(r, 0.65); // bias toward 0, but keep some big delays
+        const introJitter = Math.round(skew * introMaxDelay);
+        let enterDelay = isIntro
+          ? introJitter
+          : (baseEnterDelay + ((wave.group * 31 + suf * 47) % 160));
+
+        // Intro: a bit faster; Story: slower/organic translate-only
+        let introEnterDur =
+          wave.group === 1 ? 1050 :
+          wave.group === 2 ? 1250 :
+          wave.group === 3 ? 1450 :
+          1650;
+        const storyBaseDur =
+          wave.group === 1 ? 1700 :
+          wave.group === 2 ? 1900 :
+          wave.group === 3 ? 2100 :
+          2300;
+        let storyEnterDur = storyBaseDur + ((wave.group * 37 + suf * 19) % 500); // +0..499ms
+
+        // Exception: 4-5 should be the very last, slower entrance (intro + story)
+        if (wave.id === '4-5') {
+          enterDelay += isIntro ? 520 : 420;
+          introEnterDur += 650;
+          storyEnterDur += 650;
+        }
+        // Intro: start slightly zoomed-in then ease out for more dynamism
+        const startScale =
+          isIntro
+            ? (wave.group === 1 ? 1.06 : wave.group === 2 ? 1.08 : wave.group === 3 ? 1.10 : 1.12)
+            : 1.02;
+        const endScale = 1.02;
         return (
           <img
             key={wave.id}
@@ -159,7 +217,10 @@ function Background({ visibleIds, exiting, reenterGroups, exitGroups, stageColor
               ['--ampX']: `${ax}px`,
               ['--ampY']: `${ay}px`,
               ['--enterDelay']: `${enterDelay}ms`,
+              ['--enterDur']: `${introEnterDur}ms`,
               ['--storyEnterDur']: `${storyEnterDur}ms`,
+              ['--startScale']: String(startScale),
+              ['--endScale']: String(endScale),
             }}
             decoding="async"
             loading="eager"

@@ -545,6 +545,9 @@
 .centerDimVisible {
   opacity: 1;
 }
+.centerDimFadeOut {
+  opacity: 0;
+}
 .centerMsg {
   position: absolute;
   max-width: 90vw;
@@ -566,6 +569,9 @@
 }
 .centerMsgVisible {
   opacity: 1;
+}
+.centerMsgFadeOut {
+  opacity: 0;
 }
 
 .hintMsg {

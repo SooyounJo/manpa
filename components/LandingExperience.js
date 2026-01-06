@@ -73,6 +73,7 @@ const GUIDE_SCREENS = [
 export default function LandingExperience() {
   const [visibleIds, setVisibleIds] = useState(() => new Set());
   const timersRef = useRef([]);
+  const waveTimersRef = useRef([]);
   // Wave group helpers for story sequencing
   const GROUPS = useRef({
     1: ['1-1', '1-2', '1-3', '1-4', '1-5'],
@@ -108,7 +109,7 @@ export default function LandingExperience() {
   const { playLoop, stopLoop, resumeLoop } = useAudio();
   const bgmStartedRef = useRef(false);
   const [ampScale, setAmpScale] = useState(1);
-  const [breathCount, setBreathCount] = useState(0);
+  const [breathCount, setBreathCount] = useState(1); // story chapter (1..8)
   // track last directive to avoid redundant state churn
   const lastWaveKeyRef = useRef('');
   // soft re-entry groups (opacity-only)
@@ -118,16 +119,6 @@ export default function LandingExperience() {
   const [mounted, setMounted] = useState(false);
   const [todayStr, setTodayStr] = useState('');
   const [guideIdx, setGuideIdx] = useState(-1); // -1: not showing, 0..N: guide pages
-  const incrementBreathCount = () => {
-    if (typeof window === 'undefined') return;
-    try {
-      const cur = parseInt(window.localStorage.getItem('manpa_breath_count') || '0', 10) || 0;
-      const next = cur + 1;
-      window.localStorage.setItem('manpa_breath_count', String(next));
-      setBreathCount(next);
-    } catch {}
-  };
-
   const resetWavesToGroup1 = () => {
     try {
       setVisibleIds(new Set(GROUPS.current?.[1] || []));
@@ -137,13 +128,14 @@ export default function LandingExperience() {
       lastWaveKeyRef.current = '';
     } catch {}
   };
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+
+  const clearWaveTimers = () => {
     try {
-      const cur = parseInt(window.localStorage.getItem('manpa_breath_count') || '0', 10) || 0;
-      setBreathCount(cur);
+      (waveTimersRef.current || []).forEach((t) => clearTimeout(t));
     } catch {}
-  }, []);
+    waveTimersRef.current = [];
+  };
+  // Story chapter is driven by BreathEngine's onSectionChange (no localStorage counter).
 
   // Mark mounted and set client-only states to prevent SSR/CSR mismatch
   useEffect(() => {
@@ -159,41 +151,58 @@ export default function LandingExperience() {
   }, []);
 
   const [showHeadphoneHint, setShowHeadphoneHint] = useState(true);
+  const [headphoneFadeOut, setHeadphoneFadeOut] = useState(false);
   const [introReady, setIntroReady] = useState(false);
+  const [storyPrelude, setStoryPrelude] = useState(false); // guide -> story: bg first, then text/capsules
+  const [storyUiVisible, setStoryUiVisible] = useState(false); // fade-in for story UI (capsules + text)
+
+  useEffect(() => {
+    if (!showEngine) {
+      setStoryUiVisible(false);
+      return;
+    }
+    setStoryUiVisible(false);
+    const t = setTimeout(() => setStoryUiVisible(true), 50);
+    return () => clearTimeout(t);
+  }, [showEngine]);
 
   // Headphone hint then start intro (blocked until audio permission confirmed)
   useEffect(() => {
     if (!mounted) return;
     if (showAudioModal) return; // must confirm audio before proceeding
     setStageColor('#000');
-    const t = setTimeout(() => {
+    setHeadphoneFadeOut(false);
+    const t1 = setTimeout(() => setHeadphoneFadeOut(true), 2600);
+    const t2 = setTimeout(() => {
       setShowHeadphoneHint(false);
       setIntroReady(true);
       resumeLoop();
     }, 4000);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [mounted, showAudioModal, resumeLoop]);
 
   useEffect(() => {
     if (!introReady) return;
-    const stepIntervals = [1400, 1100, 900, 800]; // faster reveal cadence
-    const steps = [
-      ['1-1', '1-2', '1-3', '1-4', '1-5'],
-      ['2-1', '2-2', '2-3', '2-4'],
-      ['3-1', '3-2', '3-3'],
-      ['4-1', '4-2', '4-3', '4-4', '4-5'],
-    ];
     const add = (ids) => setVisibleIds((prev) => new Set([...prev, ...ids]));
-    let acc = 0;
-    steps.forEach((ids, idx) => {
-      const delay = stepIntervals[Math.min(idx, stepIntervals.length - 1)];
-      timersRef.current.push(setTimeout(() => add(ids), acc));
-      acc += delay;
-    });
+    const group1 = ['1-1', '1-2', '1-3', '1-4', '1-5'];
+    const group2 = ['2-1', '2-2', '2-3', '2-4'];
+    const group3 = ['3-1', '3-2', '3-3'];
+    const group4 = ['4-1', '4-2', '4-3', '4-4', '4-5'];
 
-    const ENTRANCE_MS = 800;
-    const lastStepDelay = (stepIntervals[0] + stepIntervals[1] + stepIntervals[2] + stepIntervals[3]) - stepIntervals[0];
-    const brandDelay = lastStepDelay + ENTRANCE_MS + 1000;
+    // Organic overlap: 2 starts around when 1-4 arrives; 3 starts around when 2-3 arrives; 4 starts around when 3-2 arrives.
+    const g2At = 900;
+    const g3At = 1650;
+    const g4At = 2400;
+
+    timersRef.current.push(setTimeout(() => add(group1), 0));
+    timersRef.current.push(setTimeout(() => add(group2), g2At));
+    timersRef.current.push(setTimeout(() => add(group3), g3At));
+    timersRef.current.push(setTimeout(() => add(group4), g4At));
+
+    const brandDelay = g4At + 1500; // after 4 group is mostly in
     const brandTimer = setTimeout(() => {
       setBrandVisible(true);
       const CHAR_COUNT = '萬波息笛'.length;
@@ -263,11 +272,26 @@ export default function LandingExperience() {
       const next = prev + 1;
       if (next >= GUIDE_SCREENS.length) {
         // 마지막 페이지 후 바로 스토리 시작
-        resetWavesToGroup1(); // story should start with 1-x only
-        incrementBreathCount();
-        setShowEngine(true);
+        setBreathCount(1);
         setStageColor('#DBE7EA');
-        setShowTopCapsule(true);
+        // Show background/waves first, then bring in story text + capsules after 3s
+        setStoryPrelude(true);
+        // Start with background only (no waves), then let 1-x translate in.
+        try {
+          setVisibleIds(new Set());
+          setReenterGroups(new Set());
+          setSoftReenterGroups(new Set());
+          setExitGroups(new Set());
+          lastWaveKeyRef.current = '';
+        } catch {}
+        postTimersRef.current.push(setTimeout(() => {
+          resetWavesToGroup1(); // now 1-x enters smoothly
+        }, 120));
+        postTimersRef.current.push(setTimeout(() => {
+          setShowEngine(true);
+          setShowTopCapsule(true);
+          setStoryPrelude(false);
+        }, 3000));
         return -1;
       }
       return next;
@@ -281,6 +305,7 @@ export default function LandingExperience() {
   // Wave directive handler (from BreathEngine)
   const applyWaveDirective = (directive) => {
     if (!directive) return;
+    clearWaveTimers();
     // Build visible id set from requested groups
     if (directive.type === 'show' && Array.isArray(directive.groups)) {
       const key = `show:${directive.groups.sort().join(',')}|re:${(directive.reenter || []).sort().join(',')}`;
@@ -295,6 +320,49 @@ export default function LandingExperience() {
       setReenterGroups(new Set());
       setSoftReenterGroups(new Set());
       setExitGroups(new Set());
+      return;
+    }
+    if (directive.type === 'set' && Array.isArray(directive.groups)) {
+      const ids = [];
+      directive.groups.forEach((g) => ids.push(...(GROUPS.current[g] || [])));
+      setVisibleIds(new Set(ids));
+      setReenterGroups(new Set());
+      setSoftReenterGroups(new Set());
+      setExitGroups(new Set());
+      lastWaveKeyRef.current = `set:${directive.groups.slice().sort().join(',')}`;
+      return;
+    }
+    if (directive.type === 'burst' && Array.isArray(directive.sequence)) {
+      const baseGroups = Array.isArray(directive.baseGroups) ? directive.baseGroups : [1];
+      const stepMs = typeof directive.stepMs === 'number' ? directive.stepMs : 220;
+      const resetAfterMs = typeof directive.resetAfterMs === 'number' ? directive.resetAfterMs : null;
+
+      // Start from base (usually 1-x only)
+      const baseIds = [];
+      baseGroups.forEach((g) => baseIds.push(...(GROUPS.current[g] || [])));
+      setVisibleIds(new Set(baseIds));
+      setReenterGroups(new Set());
+      setSoftReenterGroups(new Set());
+      setExitGroups(new Set());
+      lastWaveKeyRef.current = `burst:${baseGroups.join(',')}=>${directive.sequence.join(',')}`;
+
+      // Then add groups sequentially
+      directive.sequence.forEach((g, i) => {
+        waveTimersRef.current.push(setTimeout(() => {
+          setVisibleIds((prev) => {
+            const next = new Set(prev);
+            (GROUPS.current[g] || []).forEach((id) => next.add(id));
+            return next;
+          });
+        }, Math.max(0, stepMs * i)));
+      });
+
+      // Reset back to base after beat finishes (so next exhale can "burst" again)
+      if (resetAfterMs != null) {
+        waveTimersRef.current.push(setTimeout(() => {
+          setVisibleIds(new Set(baseIds));
+        }, Math.max(0, resetAfterMs)));
+      }
       return;
     }
     if (directive.type === 'flashHide' && Array.isArray(directive.hideGroups)) {
@@ -319,7 +387,7 @@ export default function LandingExperience() {
         reenterGroups={reenterGroups}
         exitGroups={exitGroups}
         stageColor={stageColor}
-        isIntro={!showEngine}
+        isIntro={!showEngine && !storyPrelude}
         dimOverlay={
           (guideIdx >= 0 && !showEngine && !showFinal && !finalHold)
             ? 0.8
@@ -336,8 +404,8 @@ export default function LandingExperience() {
         {showEngine ? null : null}
         {showHeadphoneHint ? (
           <div className={styles.centerText}>
-            <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
-            <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${styles.hintMsg}`}>
+            <div className={`${styles.centerDim} ${styles.centerDimVisible} ${headphoneFadeOut ? styles.centerDimFadeOut : ''}`} />
+            <div className={`${styles.centerMsg} ${styles.centerMsgVisible} ${headphoneFadeOut ? styles.centerMsgFadeOut : ''} ${styles.hintMsg}`}>
               이어폰 사용을 통해<br/>더 깊이있는 체험이 가능합니다
             </div>
           </div>
@@ -428,7 +496,7 @@ export default function LandingExperience() {
           </div>
         ) : null}
         {showEngine ? (
-          <div className={`${styles.fadeIn} ${styles.fadeInVisible}`}>
+          <div className={`${styles.fadeIn} ${storyUiVisible ? styles.fadeInVisible : ''}`}>
             <BreathEngine
               onBgColor={setStageColor}
               onFirstBeat={() => setShowTopCapsule(true)}
@@ -440,6 +508,8 @@ export default function LandingExperience() {
                 } else {
                   setAmpScale(1);
                 }
+                const n = parseInt(String(chapter), 10);
+                if (!Number.isNaN(n)) setBreathCount(n);
               }}
               onFinal={() => {
                 // Dark waves-only for 3s, then to mic input overlay
@@ -456,14 +526,14 @@ export default function LandingExperience() {
         ) : null}
         {showEngine ? (
           <>
-            <img src="/img/manpa.png" alt="manpa" className={styles.miniLogo} style={capsuleHeight ? { height: `${capsuleHeight}px` } : undefined} />
-            <div ref={topCapsuleRef} className={`${styles.capsuleTop} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`}>
+            <img src="/img/manpa.png" alt="manpa" className={`${styles.miniLogo} ${styles.fadeIn} ${storyUiVisible ? styles.fadeInVisible : ''}`} style={capsuleHeight ? { height: `${capsuleHeight}px` } : undefined} />
+            <div ref={topCapsuleRef} className={`${styles.capsuleTop} ${styles.fadeIn} ${storyUiVisible ? styles.fadeInVisible : ''} ${finalTransition ? styles.fadeOutSlow : ''}`}>
               <div className={styles.capsuleDate}>
                 {mounted ? todayStr : ''}
               </div>
               <div className={styles.capsuleSub}>{breathCount}번째 호흡</div>
             </div>
-            <div className={`${styles.bottomToggles} ${styles.fadeIn} ${styles.fadeInVisible} ${finalTransition ? styles.fadeOutSlow : ''}`} aria-hidden>
+            <div className={`${styles.bottomToggles} ${styles.fadeIn} ${storyUiVisible ? styles.fadeInVisible : ''} ${finalTransition ? styles.fadeOutSlow : ''}`} aria-hidden>
               <button className={`${styles.toggleBtn} ${styles.toggleBtn478} ${mode478 ? styles.toggleActive478 : ''}`} disabled>4-7-8</button>
               <button className={`${styles.toggleBtn} ${mode446 ? styles.toggleActive : ''}`} disabled>4-4-6</button>
               <button className={`${styles.toggleBtn} ${modeHalf ? styles.toggleActive : ''}`} disabled>1:2</button>
@@ -484,8 +554,7 @@ export default function LandingExperience() {
               setShowFinal(false);
               setStageColor('#DBE7EA');
               resetWavesToGroup1(); // restart story with 1-x only
-              // count next session
-              incrementBreathCount();
+              setBreathCount(1);
               setShowEngine(true);
               setShowTopCapsule(true);
             }}

@@ -11,9 +11,26 @@
   /* subtle upscaling for all waves */
   --startScale: 0.98;
   --endScale: 1.02; /* tweak here for stronger or weaker overall size */
-  --enterDur: 600ms; /* faster entrance */
+  --enterDur: 1100ms; /* smoother entrance */
   --ampX: 8px; /* default float amplitude X */
   --ampY: 5px; /* default float amplitude Y */
+}
+
+.stageFadeIn {
+  animation: stageFadeIn 900ms ease both;
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/img/full.PNG");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 1; /* behind waves (waves start ~100+) */
 }
 
 .wave {
@@ -40,6 +57,17 @@
   --floatDelay: 0ms;
 }
 
+/* Story mode: keep non-visible waves hidden; when .visible is applied they translate in (no fade). */
+.story .wave {
+  opacity: 0;
+  filter: none;
+}
+.story .visible,
+.story .reenter,
+.story .reenterSoft {
+  opacity: 1;
+}
+
 .dim {
   position: absolute;
   inset: 0;
@@ -55,8 +83,8 @@
 .visible {
   /* entrance then continuous float */
   animation:
-    enter var(--enterDur) cubic-bezier(.16,.84,.44,1) forwards,
-    floatXY var(--floatDur) ease-in-out calc(var(--enterDur) + var(--floatDelay)) infinite alternate;
+    enter var(--enterDur) cubic-bezier(.18,.90,.24,1) var(--enterDelay, 0ms) forwards,
+    floatXY var(--floatDur) ease-in-out calc(var(--enterDur) + var(--enterDelay, 0ms) + var(--floatDelay)) infinite alternate;
 }
 .story .visible {
   /* In story: slow translate-only entrance, no fade */
@@ -144,6 +172,33 @@
     transform: translate3d(0, 0, 0) scale(var(--endScale));
     /* no filter */
   }
+}
+
+@keyframes enterTranslate {
+  from {
+    opacity: 1;
+    transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--startScale));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--endScale));
+  }
+}
+
+@keyframes reenterTranslate {
+  from {
+    opacity: 1;
+    transform: translate3d(var(--enterX), var(--enterY), 0) scale(var(--endScale));
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(var(--endScale));
+  }
+}
+
+@keyframes stageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 

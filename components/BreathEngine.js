@@ -12,6 +12,7 @@ export default function BreathEngine({
   onWaveDirective,
   onSectionChange,
   stageColorDefault = '#DBE7EA',
+  uiVisible = true,
 }) {
   const LINE_EXTRA_MS = 2000; // global extra time per line
   const beats = useMemo(() => narrativeBeats.filter(b => !b.hidden), []);
@@ -98,72 +99,10 @@ export default function BreathEngine({
       const base = b.lineMs || 3000;
       timers.current.push(setTimeout(() => setLineIdx(1), base + LINE_EXTRA_MS));
     }
-    // initial wave directive per beat at first line
-    try {
-      if (b?.id) {
-        // 1-x: progressively add 2,3,4
-        if (/^1-/.test(b.id)) {
-          const suf = parseInt(String(b.id).split('-')[1] || '1', 10);
-          const groups = suf <= 1 ? [1] : suf === 2 ? [1,2] : suf === 3 ? [1,2,3] : [1,2,3,4];
-          const reenter = suf > 1 ? [suf] : [];
-          onWaveDirective?.({ type: 'show', groups, reenter, softReenter: suf > 1 });
-        }
-        // 2-1 exhale: line0 only 1, line1 add 2; 2-3 inhale: add 3
-        if (b.id === '2-1') {
-          onWaveDirective?.({ type: 'show', groups: [1] });
-        }
-        if (b.id === '2-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
-        }
-        // 3-1 exhale: start with 1+2; 3-4 inhale: add 4
-        if (b.id === '3-1') {
-          onWaveDirective?.({ type: 'show', groups: [1,2] });
-        }
-        if (b.id === '3-4') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
-        }
-        // 4-1, 4-2, 4-3 (two lines)
-        if (b.id === '4-1') {
-          onWaveDirective?.({ type: 'show', groups: [1] });
-        }
-        if (b.id === '4-2') {
-          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
-        }
-        if (b.id === '4-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
-        }
-        // 5-1, 5-2, 5-3 (two lines)
-        if (b.id === '5-1') {
-          onWaveDirective?.({ type: 'show', groups: [1] });
-        }
-        if (b.id === '5-2') {
-          onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
-        }
-        if (b.id === '5-3') {
-          onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
-        }
-        // Pauses: schedule last-2s reveals per spec
-        if (b.trigger === 'pause') {
-          const totalMsPause = Math.max(b.interludeMs || 7000, 7000);
-          if (b.id === 'i-1') {
-            // all moving, last 2s only 1-x
-            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
-            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
-          } else if (b.id === 'i-2') {
-            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
-            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
-          } else if (b.id === 'i-3') {
-            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
-            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
-          } else if (b.id === 'i-5') {
-            onWaveDirective?.({ type: 'show', groups: [1,2,3,4] });
-            timers.current.push(setTimeout(() => onWaveDirective?.({ type: 'flashHide', hideGroups: [2,3,4], ms: 700 }), Math.max(0, totalMsPause - 2000)));
-          } else {
-            // default: keep current state
-          }
-        }
-      }
-    } catch {}
+    // Story waves: keep calm at 1-x until user exhales (burst happens on exhale trigger).
+    if (b.trigger === 'exhale') {
+      onWaveDirective?.({ type: 'set', groups: [1] });
+    }
     // show capsule in waiting state (exhale waits for trigger, inhale auto-runs)
     setShowCountdown(true);
     setPromptLabel(b.trigger === 'exhale' ? '숨을 불어넣기' : (b.trigger === 'pause' ? '멈춤' : '숨을 들이쉬기'));
@@ -228,30 +167,7 @@ export default function BreathEngine({
     }
   }, [beats, onBgColor, playOnce, stop, stageColorDefault]);
 
-  // Wave directives that depend on in-beat line changes
-  useEffect(() => {
-    const b = beats[idx];
-    if (!b || !b.id) return;
-    try {
-      // 2-1 exhale: line 1 → add group 2
-      if (b.id === '2-1' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2], reenter: [2], softReenter: true });
-      }
-      // 3-1 exhale: line 1 → add group 3
-      if (b.id === '3-1' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3], reenter: [3], softReenter: true });
-      }
-      // 4-3 exhale: line 1 → add group 4
-      if (b.id === '4-3' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
-      }
-      // 5-3 exhale: line 1 → add group 4 and keep all afterwards
-      if (b.id === '5-3' && lineIdx === 1) {
-        onWaveDirective?.({ type: 'show', groups: [1,2,3,4], reenter: [4], softReenter: true });
-      }
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lineIdx, idx]);
+  // (wave behavior is now handled only via exhale-trigger bursts)
 
   // init: auto-start on first inhale beat
   useEffect(() => {
@@ -306,6 +222,17 @@ export default function BreathEngine({
     setPromptBlink(false);
     // play exhale SFX exactly at trigger time (if provided)
     if (b.audio) playOnce(`/music/${b.audio}`);
+    // Waves: on exhale, burst 2 → 3 → 4 in sequence, then return to 1-x after the beat
+    try {
+      const totalMsBurst = Math.max(b.interludeMs != null ? b.interludeMs : 8000, 8000);
+      onWaveDirective?.({
+        type: 'burst',
+        baseGroups: [1],
+        sequence: [2, 3, 4],
+        stepMs: 220,
+        resetAfterMs: Math.max(0, totalMsBurst - 150),
+      });
+    } catch {}
     exhaleLockedRef.current = true;
     // compute total display time and show countdown in label
     // Exhale countdown: 8 seconds (use interludeMs if longer)
@@ -358,7 +285,7 @@ export default function BreathEngine({
 
   return (
     <>
-      <div className={styles.centerText} aria-live="polite">
+      <div className={`${styles.centerText} ${styles.fadeIn} ${uiVisible ? styles.fadeInVisible : ''}`} aria-live="polite">
         <div className={`${styles.centerDim} ${styles.centerDimVisible}`} />
         {showCountdown ? (
           <div className={`${styles.timerTop} ${breathGlow ? styles.timerTopActive : styles.timerTopInactive} ${promptBlink ? styles.timerTopBlink : ''}`} style={{ opacity: promptOpacity, whiteSpace: 'pre-line' }}>

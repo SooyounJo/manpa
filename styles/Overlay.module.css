@@ -6,6 +6,7 @@
   padding: 24px;
   z-index: 2200;
   background: rgba(8, 10, 16, 0.35);
+  animation: overlayFadeIn 700ms ease both;
 }
 
 .overlayPlain {
@@ -16,6 +17,7 @@
   padding: 24px;
   z-index: 2200;
   background: rgba(0, 0, 0, 0.45); /* iOS-like dim */
+  animation: overlayFadeIn 700ms ease both;
 }
 
 .overlayDim {
@@ -44,6 +46,7 @@
   justify-content: center;
   font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
   position: relative;
+  animation: modalFadeIn 520ms cubic-bezier(.18,.90,.24,1) both;
 }
 
 .modal::before {
@@ -71,6 +74,7 @@
   text-align: center;
   justify-content: center;
   font-family: 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  animation: modalFadeIn 520ms cubic-bezier(.18,.90,.24,1) both;
 }
 .overlayDim {
   animation: overlayDimIn 150ms ease both;
@@ -180,6 +184,16 @@
 @keyframes overlayDimIn {
   from { background: rgba(8, 10, 16, 0.0); }
   to   { background: rgba(8, 10, 16, 0.45); }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 
