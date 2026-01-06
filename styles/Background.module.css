@@ -74,8 +74,16 @@ body.is-android .wave {
 }
 
 .dim {
-  /* 전체 디바이스에서 dim 오버레이 비사용. (성능/플리커 이슈 방지) */
-  display: none !important;
+  position: absolute;
+  inset: 0;
+  /* 성능/안정성을 위해 단색 인디고 + opacity 애니메이션만 사용 */
+  background: rgba(15, 25, 55, 1);
+  opacity: var(--dimOpacity, 0);
+  transition: opacity 900ms ease;
+  pointer-events: none;
+  z-index: 3000; /* ensure above all waves */
+  will-change: opacity;
+  transform: translateZ(0);
 }
 
 .visible {

@@ -556,7 +556,7 @@
 }
 .lightTheme .centerDim {
   /* 라이트 테마에서는 블랙 텍스트를 받쳐주는 화이트 그라디언트 사용 (알파값은 낮게) */
-  background: radial-gradient(40vw 28vh at 50% 50%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(50vw 32vh at 50% 45%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0) 78%);
 }
 
 /* Android에서는 화이트 그라디언트 튐/플리커 방지를 위해 훨씬 약한 단색 + 트랜지션 제거 */
