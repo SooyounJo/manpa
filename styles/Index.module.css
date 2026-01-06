@@ -449,6 +449,8 @@
   text-align: center;
   padding: 24px 24px calc(24px + env(safe-area-inset-bottom)) 24px;
   pointer-events: auto;
+  overflow: auto; /* if content is taller on some mobile screens, allow scroll instead of clipping */
+  -webkit-overflow-scrolling: touch;
 }
 .guideBlock {
   width: min(86vw, 420px);
